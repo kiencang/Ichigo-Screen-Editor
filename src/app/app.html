@@ -73,52 +73,53 @@
       <!-- Video Preview and Annotations -->
       <div class="col-span-1 lg:col-span-9 flex flex-col gap-6">
         
-        <div class="bg-black rounded-2xl overflow-hidden relative shadow-md ring-1 ring-white/10 flex items-center justify-center min-h-[300px]">
-          <!-- Video element -->
-          <video 
-            #videoEl
-            [src]="videoUrl()"
-            crossorigin="anonymous"
-            class="max-w-full max-h-[60vh] object-contain block"
-            (loadedmetadata)="onVideoLoadedMetadata($event)"
-            (timeupdate)="onTimeUpdate()"
-            (play)="isPlaying.set(true)"
-            (pause)="isPlaying.set(false)"
-            (seeking)="onTimeUpdate()"
-            (seeked)="onTimeUpdate()">
-          </video>
-          
-          <!-- Drawing Canvas overlaid exactly on top of video -->
-          <!-- We place it absolute, inset-0 to cover the container, but we need it to exactly match the video sizing. -->
-          <!-- Using inline width/height 100% and object-fit to match the video bounding box -->
-          <canvas
-            #canvasEl
-            class="absolute top-0 left-0 w-full h-full object-contain cursor-crosshair z-10 touch-none pointer-events-auto"
-            [class.pointer-events-none]="currentTool() === 'pointer'"
-            (mousedown)="onPointerDown($event)"
-            (mousemove)="onPointerMove($event)"
-            (mouseup)="onPointerUp()"
-            (mouseleave)="onPointerUp()"
-            (touchstart)="onPointerDown($event)"
-            (touchmove)="onPointerMove($event)"
-            (touchend)="onPointerUp()">
-          </canvas>
-          
-          <!-- Watermark Live Preview Overlay -->
-          @if (logoPreviewUrl()) {
-            <div class="absolute inset-x-4 inset-y-4 z-15 pointer-events-none overflow-hidden select-none flex"
-                 [class.justify-start]="logoPosition() === 'top-left' || logoPosition() === 'bottom-left'"
-                 [class.justify-end]="logoPosition() === 'top-right' || logoPosition() === 'bottom-right'"
-                 [class.items-start]="logoPosition() === 'top-left' || logoPosition() === 'top-right'"
-                 [class.items-end]="logoPosition() === 'bottom-left' || logoPosition() === 'bottom-right'">
-              <img [src]="logoPreviewUrl()" 
-                   alt="Watermark Preview"
-                   [style.opacity]="logoOpacity() / 100"
-                   [style.width.%]="logoSize()"
-                   class="max-w-[30%] h-auto border border-white/5 shadow-sm rounded-lg"
-                   referrerpolicy="no-referrer">
-            </div>
-          }
+        <div class="bg-black rounded-2xl overflow-hidden relative shadow-md ring-1 ring-white/10 flex items-center justify-center mx-auto w-full max-h-[60vh]">
+          <div class="relative max-w-full max-h-[60vh] flex items-center justify-center"
+               [style.aspect-ratio]="videoWidth() && videoHeight() ? (videoWidth() + '/' + videoHeight()) : '16/9'">
+            <!-- Video element -->
+            <video 
+              #videoEl
+              [src]="videoUrl()"
+              crossorigin="anonymous"
+              class="w-full h-full block"
+              (loadedmetadata)="onVideoLoadedMetadata($event)"
+              (timeupdate)="onTimeUpdate()"
+              (play)="isPlaying.set(true)"
+              (pause)="isPlaying.set(false)"
+              (seeking)="onTimeUpdate()"
+              (seeked)="onTimeUpdate()">
+            </video>
+            
+            <!-- Drawing Canvas overlaid exactly on top of video -->
+            <canvas
+              #canvasEl
+              class="absolute top-0 left-0 w-full h-full cursor-crosshair z-10 touch-none pointer-events-auto"
+              [class.pointer-events-none]="currentTool() === 'pointer'"
+              (mousedown)="onPointerDown($event)"
+              (mousemove)="onPointerMove($event)"
+              (mouseup)="onPointerUp()"
+              (mouseleave)="onPointerUp()"
+              (touchstart)="onPointerDown($event)"
+              (touchmove)="onPointerMove($event)"
+              (touchend)="onPointerUp()">
+            </canvas>
+            
+            <!-- Watermark Live Preview Overlay -->
+            @if (logoPreviewUrl()) {
+              <div class="absolute inset-0 p-[3%] z-15 pointer-events-none overflow-hidden select-none flex"
+                   [class.justify-start]="logoPosition() === 'top-left' || logoPosition() === 'bottom-left'"
+                   [class.justify-end]="logoPosition() === 'top-right' || logoPosition() === 'bottom-right'"
+                   [class.items-start]="logoPosition() === 'top-left' || logoPosition() === 'top-right'"
+                   [class.items-end]="logoPosition() === 'bottom-left' || logoPosition() === 'bottom-right'">
+                <img [src]="logoPreviewUrl()" 
+                     alt="Watermark Preview"
+                     [style.opacity]="logoOpacity() / 100"
+                     [style.width.%]="logoSize()"
+                     class="max-w-[30%] h-auto border border-white/5 shadow-sm rounded-lg"
+                     referrerpolicy="no-referrer">
+              </div>
+            }
+          </div>
         </div>
 
         <!-- Modern Custom Video Player Control & Timeline Dock -->
@@ -510,6 +511,33 @@
                <option value="gif" [disabled]="isGifDisabled()">GIF (.gif){{ isGifDisabled() ? translations().gifLimit : '' }}</option>
              </select>
           </div>
+          
+          <!-- Audio Bitrate -->
+          @if (outputFormat() !== 'gif') {
+            <div class="flex flex-col gap-2">
+               <span class="text-sm font-medium text-neutral-400">{{ translations().audioBitrate }}</span>
+               <select [ngModel]="audioBitrate()" (ngModelChange)="audioBitrate.set($event)"
+                  class="w-full bg-neutral-950 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer">
+                 <option [value]="128000">128 Kbps</option>
+                 <option [value]="192000">192 Kbps (Default)</option>
+                 <option [value]="320000">320 Kbps</option>
+               </select>
+            </div>
+          }
+
+          <!-- Video Bitrate -->
+          @if (outputFormat() !== 'gif') {
+            <div class="flex flex-col gap-2">
+               <span class="text-sm font-medium text-neutral-400">{{ translations().videoBitrate }}</span>
+               <select [ngModel]="videoBitrate()" (ngModelChange)="videoBitrate.set(+$event)"
+                  class="w-full bg-neutral-950 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer">
+                 <option [value]="0">{{ lang() === 'vi' ? 'Tự động (Khuyên dùng)' : 'Auto-detected (Recommended)' }}</option>
+                 <option [value]="2000000">2 Mbps</option>
+                 <option [value]="4000000">4 Mbps</option>
+                 <option [value]="8000000">8 Mbps</option>
+               </select>
+            </div>
+          }
 
         </div>
 
@@ -528,13 +556,21 @@
         
         <!-- Output Box -->
         @if (outputUrl()) {
-          <div class="p-5 rounded-2xl bg-emerald-950/20 border border-emerald-500/20 flex flex-col gap-4">
-            <h3 class="text-emerald-500 text-sm font-medium flex items-center gap-2">
-              <mat-icon size="sm">check_circle</mat-icon> {{ translations().exportComplete }}
-            </h3>
-            <a [href]="outputUrl()" download class="w-full py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 font-medium rounded-xl text-center transition-colors text-sm border border-emerald-500/20 cursor-pointer">
-              {{ translations().downloadOutput }}
-            </a>
+          <div class="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/20 flex flex-col gap-2">
+            <div class="flex items-start gap-2">
+              <mat-icon class="text-emerald-500 mt-0.5">check_circle</mat-icon>
+              <div class="flex flex-col">
+                <span class="text-sm font-medium text-emerald-400 font-sans">{{ translations().exportComplete }}</span>
+                <span class="text-xs text-neutral-400 mt-0.5">{{ translations().autoDownloaded }}</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-end pt-2 border-t border-emerald-500/10 mt-1">
+              <a [href]="outputUrl()" download class="text-xs text-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-1 cursor-pointer font-medium hover:underline">
+                <mat-icon class="text-xs">download</mat-icon>
+                {{ translations().downloadFallback }}
+              </a>
+            </div>
           </div>
         }
 
@@ -549,7 +585,7 @@
       <div class="flex items-center gap-1.5">
         <span class="font-medium text-neutral-300">Ichigo Editor</span>
         <span class="text-neutral-700">•</span>
-        <span>v1.0.2</span>
+        <span>v1.0.3</span>
       </div>
       <div class="flex flex-wrap justify-center items-center gap-1.5 font-sans">
         <a href="https://github.com/kiencang/Ichigo-Editor" target="_blank" rel="noopener noreferrer" class="hover:text-neutral-300 transition-colors cursor-pointer">GitHub</a>

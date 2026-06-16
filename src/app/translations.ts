@@ -25,11 +25,15 @@ export interface AppTranslations {
   removeWatermark: string;
   videoVolume: string;
   outputFormat: string;
+  audioBitrate: string;
+  videoBitrate: string;
   gifLimit: string;
   exportVideo: string;
   rendering: string;
   exportComplete: string;
   downloadOutput: string;
+  autoDownloaded: string;
+  downloadFallback: string;
   bgAudioTrack: string;
   bgMusicVolume: string;
   extractingBgWaveform: string;
@@ -80,11 +84,15 @@ export function getTranslations(lang: 'vi' | 'en'): AppTranslations {
     removeWatermark: isVi ? 'Xóa hình mờ' : 'Remove watermark',
     videoVolume: isVi ? 'Âm lượng video' : 'Video Volume',
     outputFormat: isVi ? 'Định dạng đầu ra' : 'Output Format',
+    audioBitrate: isVi ? 'Tốc độ bit âm thanh' : 'Audio Bitrate',
+    videoBitrate: isVi ? 'Tốc độ bit video (Bitrate)' : 'Video Bitrate',
     gifLimit: isVi ? ' (không dài hơn 60s)' : ' (not longer than 60s)',
     exportVideo: isVi ? 'Xuất Video' : 'Export Video',
     rendering: isVi ? 'Đang xuất' : 'Rendering',
     exportComplete: isVi ? 'Xuất Hoàn Tất' : 'Export Complete',
     downloadOutput: isVi ? 'Tải Xuống Kết Quả' : 'Download Output',
+    autoDownloaded: isVi ? 'Video đã được xuất và tải xuống tự động.' : 'Video has been exported and downloaded automatically.',
+    downloadFallback: isVi ? 'Tải lại' : 'Redownload',
     bgAudioTrack: isVi ? 'Nhạc nền' : 'Background music',
     bgMusicVolume: isVi ? 'Âm lượng nhạc nền' : 'Background Music Volume',
     extractingBgWaveform: isVi ? 'Đang phân tích nhạc nền...' : 'Analyzing background music...',

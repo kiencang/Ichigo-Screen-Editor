@@ -54,6 +54,8 @@ export class App {
   });
   volume = signal<number>(100);
   outputFormat = signal<string>('webm');
+  audioBitrate = signal<number>(192000);
+  videoBitrate = signal<number>(0); // 0 = Auto, other values are explicit bps: 2000000, 4000000, 8000000
   
   audioFile = signal<File | null>(null);
   logoFile = signal<File | null>(null);
@@ -479,6 +481,9 @@ export class App {
       trimEnd: this.trimEnd(),
       volume: this.volume(),
       outputFormat: this.outputFormat(),
+      videoFile: this.videoFile(),
+      audioBitrate: this.audioBitrate(),
+      videoBitrate: this.videoBitrate(),
       audioFile: this.audioFile(),
       bgVolume: this.bgVolume(),
       logoFile: this.logoFile(),
@@ -495,6 +500,25 @@ export class App {
         }
         this.outputUrl.set(url);
         this.isProcessing.set(false);
+
+        // Auto-download trigger
+        try {
+          const originalName = this.videoFile()?.name || 'video';
+          const baseName = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+          const extension = this.outputFormat();
+          const downloadName = `${baseName}_ichigo.${extension}`;
+
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = downloadName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          this.logs.update(l => [...l, `[Downloader] Download triggered automatically: ${downloadName}`]);
+        } catch (downloadErr) {
+          console.error('Trigger download failed', downloadErr);
+          this.logs.update(l => [...l, `[Downloader] Error during auto-download: ${downloadErr}`]);
+        }
       },
       onError: (err: unknown) => {
         console.error(err);

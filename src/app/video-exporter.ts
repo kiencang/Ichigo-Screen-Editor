@@ -9,6 +9,9 @@ export interface VideoExportConfig {
   trimEnd: number;
   volume: number; // Volume 0-100
   outputFormat: string; // 'webm' | 'mp4'
+  videoFile: File | null;
+  audioBitrate: number;
+  videoBitrate: number;
   audioFile: File | null;
   bgVolume: number; // Bg volume 0-100
   logoFile: File | null;
@@ -44,6 +47,9 @@ export class VideoExporter {
       trimEnd,
       volume,
       outputFormat,
+      videoFile,
+      audioBitrate,
+      videoBitrate,
       audioFile,
       bgVolume,
       logoFile,
@@ -62,10 +68,47 @@ export class VideoExporter {
       onProgress(0);
       onLog(translations.step1);
 
-      // 1. Set up offscreen compositing canvas
+      // 1. Dynamic Resolution Optimization (Max: 1920x1080)
+      let outW = videoWidth || 1280;
+      let outH = videoHeight || 720;
+      const maxW = 1920;
+      const maxH = 1080;
+      if (outW > maxW || outH > maxH) {
+        const scale = Math.min(maxW / outW, maxH / outH);
+        outW = Math.round(outW * scale);
+        outH = Math.round(outH * scale);
+        onLog(`[Resolution Optimizer] Scaled down from ${videoWidth}x${videoHeight} to ${outW}x${outH} (Full HD Limit)`);
+      } else {
+        onLog(`[Resolution Optimizer] Keeping original source resolution: ${outW}x${outH}`);
+      }
+
+      // Estimate and map source video bitrate
+      let finalVideoBitrate = 4000000; // default 4 Mbps
+      if (videoBitrate > 0) {
+        finalVideoBitrate = videoBitrate;
+        onLog(`[Bitrate Analyzer] User selected custom profile: ${(finalVideoBitrate / 1000000)} Mbps.`);
+      } else if (videoFile && videoDuration > 0) {
+        const fileSizeBits = videoFile.size * 8;
+        const estimatedBitrate = fileSizeBits / videoDuration;
+        
+        if (estimatedBitrate <= 2000000) {
+          finalVideoBitrate = 2000000;
+        } else if (estimatedBitrate <= 4000000) {
+          finalVideoBitrate = 4000000;
+        } else {
+          finalVideoBitrate = 8000000;
+        }
+        
+        onLog(`[Bitrate Analyzer] Auto profile: Estimated source: ${(estimatedBitrate / 1000000).toFixed(2)} Mbps. Output profile matched: ${(finalVideoBitrate / 1000000)} Mbps.`);
+      } else {
+        finalVideoBitrate = 8000000; // fallback high quality
+        onLog(`[Bitrate Analyzer] Auto profile: Source file unreadable. Defaulting to high quality profile: 8.00 Mbps.`);
+      }
+
+      // Set up offscreen compositing canvas
       const canvas = document.createElement('canvas');
-      canvas.width = videoWidth || 1280;
-      canvas.height = videoHeight || 720;
+      canvas.width = outW;
+      canvas.height = outH;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx) {
         throw new Error('Failed to create 2D canvas context');
@@ -166,14 +209,30 @@ export class VideoExporter {
       const outputStream = new MediaStream(tracks);
 
       // 6. Configure recording container format
-      let options = { mimeType: 'video/webm;codecs=vp9,opus' };
+      let options: MediaRecorderOptions = { 
+        mimeType: 'video/webm;codecs=vp9,opus',
+        videoBitsPerSecond: finalVideoBitrate,
+        audioBitsPerSecond: audioBitrate || 192000
+      };
       if (outputFormat === 'mp4') {
         if (MediaRecorder.isTypeSupported('video/mp4;codecs=h264,aac')) {
-          options = { mimeType: 'video/mp4;codecs=h264,aac' };
+          options = { 
+            mimeType: 'video/mp4;codecs=h264,aac',
+            videoBitsPerSecond: finalVideoBitrate,
+            audioBitsPerSecond: audioBitrate || 192000
+          };
         } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-          options = { mimeType: 'video/mp4' };
+          options = { 
+            mimeType: 'video/mp4',
+            videoBitsPerSecond: finalVideoBitrate,
+            audioBitsPerSecond: audioBitrate || 192000
+          };
         } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-          options = { mimeType: 'video/webm;codecs=vp9' };
+          options = { 
+            mimeType: 'video/webm;codecs=vp9',
+            videoBitsPerSecond: finalVideoBitrate,
+            audioBitsPerSecond: audioBitrate || 192000
+          };
         }
       }
 

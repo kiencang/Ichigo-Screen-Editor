@@ -11,6 +11,9 @@ export interface ExportConfig {
   trimEnd: number;
   volume: number; // Volume 0-100
   outputFormat: string; // 'webm' | 'mp4' | 'gif'
+  videoFile: File | null;
+  audioBitrate: number;
+  videoBitrate: number;
   audioFile: File | null;
   bgVolume: number; // Bg volume 0-100
   logoFile: File | null;
