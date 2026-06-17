@@ -157,12 +157,26 @@
                 <span class="leading-none">{{ translations().exportLength }}</span>
                 <span class="font-mono font-bold leading-none">{{ formatTimeShort(trimmedDuration()) }}</span>
               </div>
+              <div class="flex items-center h-8 gap-2 bg-neutral-900 px-3 rounded-xl border border-white/5 ml-auto text-xs">
+                <mat-icon class="text-neutral-500" style="font-size: 14px; width: 14px; height: 14px;">zoom_out</mat-icon>
+                <input type="range" 
+                       [ngModel]="timelineZoom()" 
+                       (ngModelChange)="timelineZoom.set($event)" 
+                       [min]="1" 
+                       [max]="10" 
+                       step="0.1"
+                       class="w-24 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-red-500"
+                       title="Zoom Timeline">
+                <mat-icon class="text-neutral-500" style="font-size: 14px; width: 14px; height: 14px;">zoom_in</mat-icon>
+              </div>
             </div>
           </div>
 
           <!-- Interactive Timeline Track Area with Ruler -->
           <div class="flex flex-col gap-1 select-none">
-            
+            <div #timelineScrollContainer class="overflow-x-auto overflow-y-hidden custom-scrollbar pb-3 w-full scroll-smooth">
+              <div class="flex flex-col gap-1 min-w-full origin-left transition-all relative px-8" [style.min-width.%]="timelineZoom() * 100">
+
             <div #timelineContainer class="relative h-16 bg-neutral-900 border border-white/5 rounded-xl cursor-ew-resize overflow-visible"
                  (mousedown)="onTimelineMouseDown($event, 'track')"
                  (touchstart)="onTimelineTouchStart($event, 'track')">
@@ -216,6 +230,22 @@
                 }
               </div>
 
+              <!-- Visual Annotation Capsules for Stroked Elements -->
+              @for (stroke of strokes(); track stroke.id) {
+                <div class="absolute bottom-1 h-2 rounded-full cursor-pointer border border-neutral-950/50 hover:scale-y-110 hover:brightness-110 z-20 pointer-events-auto transition-all"
+                     [style.left.%]="(stroke.startTime / videoDuration()) * 100"
+                     [style.width.%]="(stroke.duration / videoDuration()) * 100"
+                     [style.background-color]="stroke.color"
+                     [class.ring-2]="activeStrokeId() === stroke.id"
+                     [class.ring-white]="activeStrokeId() === stroke.id"
+                     [class.opacity-100]="activeStrokeId() === stroke.id"
+                     [class.opacity-60]="activeStrokeId() !== stroke.id"
+                     (mousedown)="$event.stopPropagation(); $event.preventDefault(); activeStrokeId.set(stroke.id); seekTo(stroke.startTime)"
+                     (touchstart)="$event.stopPropagation(); $event.preventDefault(); activeStrokeId.set(stroke.id); seekTo(stroke.startTime)"
+                     title="Annotation">
+                </div>
+              }
+
               <!-- CURRENT PLAYHEAD (Yellow or white neon line) -->
               <div class="absolute top-0 bottom-0 w-[2px] bg-yellow-400 z-30 pointer-events-none shadow-[0_0_8px_rgba(250,204,21,0.6)]"
                    [style.left.%]="(currentTime() / videoDuration()) * 100">
@@ -232,7 +262,7 @@
                   <div class="w-[1px] h-3 bg-white/70"></div>
                 </div>
                 <!-- Tooltip showing start time -->
-                <div class="absolute -top-8 px-1.5 py-0.5 bg-red-500 text-neutral-100 text-[10px] rounded font-mono font-medium opacity-0 group-hover:opacity-100 pointer-events-none shadow-md transition-opacity">
+                <div class="absolute -top-8 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-red-500 text-neutral-100 text-[10px] rounded font-mono font-medium opacity-0 group-hover:opacity-100 pointer-events-none shadow-md transition-opacity">
                   {{ formatTimeShort(trimStart()) }}
                 </div>
               </div>
@@ -246,7 +276,7 @@
                   <div class="w-[1px] h-3 bg-white/70"></div>
                 </div>
                 <!-- Tooltip showing end time -->
-                <div class="absolute -top-8 px-1.5 py-0.5 bg-red-500 text-neutral-100 text-[10px] rounded font-mono font-medium opacity-0 group-hover:opacity-100 pointer-events-none shadow-md transition-opacity">
+                <div class="absolute -top-8 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-red-500 text-neutral-100 text-[10px] rounded font-mono font-medium opacity-0 group-hover:opacity-100 pointer-events-none shadow-md transition-opacity">
                   {{ formatTimeShort(trimEnd()) }}
                 </div>
               </div>
@@ -312,7 +342,8 @@
               }
             </div>
 
-
+              </div>
+            </div>
 
           </div>
 
@@ -353,13 +384,131 @@
               </button>
             </div>
 
-            <div class="flex items-center gap-2 ml-auto">
-                <input type="color" [ngModel]="color()" (ngModelChange)="color.set($event)" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0">
-                <button (click)="clearCanvas()" class="px-3 py-1.5 text-sm font-medium text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors cursor-pointer">
-                  {{ translations().clear }}
-                </button>
+            <div class="flex items-center gap-2 ml-auto justify-end">
+                <input type="color" [ngModel]="color()" (ngModelChange)="color.set($event)" class="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0" title="Select color">
             </div>
         </div>
+
+        <!-- Annotation Timeline & properties panel -->
+        @if (strokes().length > 0) {
+          <div class="p-5 rounded-2xl bg-neutral-900 border border-white/5 flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+              <span class="text-xs font-semibold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
+                <mat-icon class="text-red-400" style="font-size: 16px; width: 16px; height: 16px;">layers</mat-icon>
+                {{ lang() === 'vi' ? 'Danh sách chú thích & Dòng thời gian' : 'Annotation Layers & Timeline' }}
+              </span>
+              <span class="text-[10px] bg-neutral-800 text-neutral-400 font-mono font-medium px-2 py-0.5 rounded-full">
+                {{ strokes().length }} {{ lang() === 'vi' ? 'mục' : 'items' }}
+              </span>
+            </div>
+
+            <!-- List of annotation layers -->
+            <div class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+              @for (stroke of strokes(); track stroke.id) {
+                <div class="flex items-center justify-between p-3 rounded-xl border transition-all text-xs select-none"
+                     [class.bg-red-500/10]="activeStrokeId() === stroke.id"
+                     [class.border-red-500/30]="activeStrokeId() === stroke.id"
+                     [class.bg-neutral-950/40]="activeStrokeId() !== stroke.id"
+                     [class.border-white/5]="activeStrokeId() !== stroke.id">
+                  
+                  <!-- Info Left side -->
+                  <button type="button" class="flex items-center gap-3 text-left flex-1 cursor-pointer"
+                          (click)="activeStrokeId.set(stroke.id); seekTo(stroke.startTime)">
+                    <!-- Dot showing color of stroke -->
+                    <span class="w-2.5 h-2.5 rounded-full border border-neutral-950/40 shrink-0" [style.background-color]="stroke.color"></span>
+                    
+                    <div class="flex flex-col gap-0.5">
+                      <span class="font-semibold text-neutral-300">
+                        {{ stroke.type === 'pen' ? (lang() === 'vi' ? 'Nét vẽ tự do' : 'Freehand Draw') : (lang() === 'vi' ? 'Mũi tên chỉ hướng' : 'Directional Arrow') }}
+                      </span>
+                      <span class="text-[10px] font-mono text-neutral-500">
+                        {{ lang() === 'vi' ? 'Bắt đầu' : 'Start' }}: {{ formatTimeShort(stroke.startTime) }} | {{ lang() === 'vi' ? 'Thời lượng' : 'Duration' }}: {{ stroke.duration.toFixed(1) }}s
+                      </span>
+                    </div>
+                  </button>
+
+                  <!-- Control actions -->
+                  <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" (click)="deleteStroke(stroke.id)" 
+                            class="p-1 px-2.5 rounded-lg bg-neutral-950/80 border border-white/5 hover:bg-red-500/10 hover:text-red-400 text-neutral-400 hover:border-red-500/20 transition-all cursor-pointer"
+                            title="Xóa chú thích">
+                      <mat-icon style="font-size: 14px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;">delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Selected annotation fine-tuning controls -->
+            @if (currentActiveStroke(); as activeStrokeItem) {
+                <div class="p-4 rounded-xl bg-neutral-950 border border-white/5 flex flex-col gap-4">
+                  <div class="text-xs font-semibold text-neutral-250 flex items-center justify-between">
+                    <span class="flex items-center gap-1.5 font-medium text-neutral-300">
+                      <mat-icon class="text-red-400" style="font-size: 14px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;">edit</mat-icon>
+                      {{ lang() === 'vi' ? 'Thiết lập chú thích đang chọn' : 'Properties of Selected Annotation' }}
+                    </span>
+                    <span class="text-[9px] bg-red-400/10 text-red-300 px-2.5 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider">
+                      {{ activeStrokeItem.type }}
+                    </span>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Start time adjustment -->
+                    <div class="flex flex-col gap-1.5">
+                      <div class="text-[10px] font-medium text-neutral-400 flex justify-between">
+                        <span>{{ lang() === 'vi' ? 'Thời điểm xuất hiện' : 'Start Time' }}</span>
+                        <span class="font-mono text-neutral-300">{{ activeStrokeItem.startTime.toFixed(2) }}s / {{ formatTimeShort(videoDuration()) }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <input type="range" 
+                               [ngModel]="activeStrokeItem.startTime" 
+                               (ngModelChange)="updateStrokeStartTime(activeStrokeItem.id, $event)" 
+                               [min]="0" 
+                               [max]="videoDuration()" 
+                               step="0.05"
+                               class="flex-1 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-red-500"
+                               title="Start Time Slider">
+                        <input type="number" 
+                               [ngModel]="activeStrokeItem.startTime | number:'1.1-2'" 
+                               (ngModelChange)="updateStrokeStartTime(activeStrokeItem.id, $event)" 
+                               [min]="0" 
+                               [max]="videoDuration()" 
+                               step="0.1"
+                               class="w-16 px-1.5 py-0.5 bg-neutral-900 border border-white/10 rounded text-neutral-200 text-center font-mono text-[11px]"
+                               title="Start Time Input">
+                      </div>
+                    </div>
+
+                    <!-- Duration Adjustment -->
+                    <div class="flex flex-col gap-1.5">
+                      <div class="text-[10px] font-medium text-neutral-400 flex justify-between">
+                        <span>{{ lang() === 'vi' ? 'Thời lượng hiển thị' : 'Display Duration' }}</span>
+                        <span class="font-mono text-neutral-300">{{ activeStrokeItem.duration.toFixed(1) }}s</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <input type="range" 
+                               [ngModel]="activeStrokeItem.duration" 
+                               (ngModelChange)="updateStrokeDuration(activeStrokeItem.id, $event)" 
+                               [min]="0.5" 
+                               [max]="10" 
+                               step="0.1"
+                               class="flex-1 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-red-500"
+                               title="Display Duration Slider">
+                        <input type="number" 
+                               [ngModel]="activeStrokeItem.duration" 
+                               (ngModelChange)="updateStrokeDuration(activeStrokeItem.id, $event)" 
+                               [min]="0.1" 
+                               [max]="60" 
+                               step="0.5"
+                               class="w-16 px-1.5 py-0.5 bg-neutral-900 border border-white/10 rounded text-neutral-200 text-center font-mono text-[11px]"
+                               title="Duration Input">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            }
+          </div>
+        }
       </div>
 
       <!-- Settings Sidebar -->
@@ -519,7 +668,7 @@
                <select [ngModel]="audioBitrate()" (ngModelChange)="audioBitrate.set($event)"
                   class="w-full bg-neutral-950 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer">
                  <option [value]="128000">128 Kbps</option>
-                 <option [value]="192000">192 Kbps (Default)</option>
+                 <option [value]="192000">{{ translations().audioBitrateDefault }}</option>
                  <option [value]="320000">320 Kbps</option>
                </select>
             </div>
@@ -585,7 +734,7 @@
       <div class="flex items-center gap-1.5">
         <span class="font-medium text-neutral-300">Ichigo Editor</span>
         <span class="text-neutral-700">•</span>
-        <span>v1.0.3</span>
+        <span>v1.0.4</span>
       </div>
       <div class="flex flex-wrap justify-center items-center gap-1.5 font-sans">
         <a href="https://github.com/kiencang/Ichigo-Editor" target="_blank" rel="noopener noreferrer" class="hover:text-neutral-300 transition-colors cursor-pointer">GitHub</a>

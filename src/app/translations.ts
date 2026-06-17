@@ -26,6 +26,7 @@ export interface AppTranslations {
   videoVolume: string;
   outputFormat: string;
   audioBitrate: string;
+  audioBitrateDefault: string;
   videoBitrate: string;
   gifLimit: string;
   exportVideo: string;
@@ -72,7 +73,7 @@ export function getTranslations(lang: 'vi' | 'en'): AppTranslations {
     editorSettings: isVi ? 'Thiết lập ứng dụng' : 'Editor Settings',
     overlaysAudio: isVi ? 'Lớp phủ & Âm thanh' : 'Overlays & Audio',
     addBgAudio: isVi ? 'Thêm nhạc nền' : 'Add background audio',
-    addWatermark: isVi ? 'Thêm hình mờ logo/watermark' : 'Add watermark logo',
+    addWatermark: isVi ? 'Thêm watermark' : 'Add watermark logo',
     logoSettings: isVi ? 'Cấu hình logo/watermark' : 'Watermark Logo Settings',
     logoPosition: isVi ? 'Vị trí hình mờ' : 'Watermark position',
     logoOpacity: isVi ? 'Độ mờ hình mờ' : 'Watermark opacity',
@@ -85,6 +86,7 @@ export function getTranslations(lang: 'vi' | 'en'): AppTranslations {
     videoVolume: isVi ? 'Âm lượng video' : 'Video Volume',
     outputFormat: isVi ? 'Định dạng đầu ra' : 'Output Format',
     audioBitrate: isVi ? 'Tốc độ bit âm thanh' : 'Audio Bitrate',
+    audioBitrateDefault: isVi ? '192 Kbps (Mặc định)' : '192 Kbps (Default)',
     videoBitrate: isVi ? 'Tốc độ bit video (Bitrate)' : 'Video Bitrate',
     gifLimit: isVi ? ' (không dài hơn 60s)' : ' (not longer than 60s)',
     exportVideo: isVi ? 'Xuất Video' : 'Export Video',

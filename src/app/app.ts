@@ -1,16 +1,18 @@
 import {ChangeDetectionStrategy, Component, signal, computed, ViewChild, ElementRef, afterNextRender, inject} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { DecimalPipe } from '@angular/common';
 import { getTranslations } from './translations';
 import { TimeFormatter } from './time-formatter';
 import { WaveformProcessor } from './waveform-processor';
 import { CanvasDrawer } from './canvas-drawer';
 import { ExportProcessor } from './export-processor';
+import { Stroke, drawStrokesOnContext } from './stroke.types';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
-  imports: [FormsModule, MatIconModule],
+  imports: [FormsModule, MatIconModule, DecimalPipe],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -71,8 +73,19 @@ export class App {
   
   currentTool = signal<'pointer' | 'pen' | 'arrow'>('pointer');
   color = signal<string>('#ef4444'); // Tailwind red-500
+  strokes = signal<Stroke[]>([]);
+  activeStrokeId = signal<string | null>(null);
+  currentActiveStroke = computed(() => {
+    const id = this.activeStrokeId();
+    if (!id) return null;
+    return this.strokes().find(s => s.id === id) || null;
+  });
+  private activeStroke: Stroke | null = null;
   
   outputUrl = signal<string | null>(null);
+
+  timelineZoom = signal<number>(1);
+  @ViewChild('timelineScrollContainer') timelineScrollContainer!: ElementRef<HTMLDivElement>;
 
   currentTime = signal<number>(0);
   isPlaying = signal<boolean>(false);
@@ -282,6 +295,7 @@ export class App {
     if (this.previewAudio) {
       this.previewAudio.currentTime = Math.max(0, target - this.trimStart());
     }
+    this.redrawCanvas();
   }
 
   cutStartAtCurrentTime() {
@@ -305,6 +319,9 @@ export class App {
       const video = this.videoEl.nativeElement;
       this.currentTime.set(video.currentTime);
       this.isPlaying.set(!video.paused);
+      this.redrawCanvas();
+      
+      this.autoScrollTimeline(video.currentTime);
       
       // Auto pause at trim boundary
       if (video.currentTime >= this.trimEnd()) {
@@ -327,6 +344,35 @@ export class App {
           }
         }
       }
+    }
+  }
+
+  autoScrollTimeline(currentTime: number) {
+    if (!this.timelineScrollContainer || !this.timelineContainer || this.videoDuration() === 0) return;
+    
+    // We only auto-scroll if it's playing and not currently dragging
+    if (!this.isPlaying() || this.activeDrag()) return;
+
+    const scrollEl = this.timelineScrollContainer.nativeElement;
+    const trackEl = this.timelineContainer.nativeElement;
+
+    const percentage = currentTime / this.videoDuration();
+    const playheadPx = percentage * trackEl.getBoundingClientRect().width;
+    
+    // Viewport width of the scroll container
+    const viewWidth = scrollEl.clientWidth;
+    const currentScroll = scrollEl.scrollLeft;
+
+    // Follow playhead (keep it within bounds, e.g., if it gets too close to the right edge)
+    const paddingRight = 100; // start scrolling when playhead is 100px from right edge
+    const paddingLeft = 50;
+
+    if (playheadPx > currentScroll + viewWidth - paddingRight) {
+      // scroll right
+      scrollEl.scrollLeft = playheadPx - viewWidth + paddingRight;
+    } else if (playheadPx < currentScroll + paddingLeft) {
+      // scroll left
+      scrollEl.scrollLeft = Math.max(0, playheadPx - paddingLeft);
     }
   }
 
@@ -423,45 +469,110 @@ export class App {
     return this.canvasDrawer.getMousePos(this.canvasEl.nativeElement, e);
   }
 
+  redrawCanvas() {
+    if (!this.ctx || !this.canvasEl) return;
+    const canvas = this.canvasEl.nativeElement;
+    this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    drawStrokesOnContext(
+      this.ctx,
+      this.strokes(),
+      this.currentTime(),
+      canvas.width,
+      canvas.height,
+      this.videoWidth(),
+      this.videoHeight()
+    );
+  }
+
   onPointerDown(e: MouseEvent | TouchEvent) {
     if (this.currentTool() === 'pointer' || !this.ctx) return;
     this.isPointerDown = true;
-    this.startPos = this.getMousePos(e);
-    this.lastPos = this.startPos;
-    this.savedImageData = this.ctx.getImageData(0, 0, this.canvasEl.nativeElement.width, this.canvasEl.nativeElement.height);
+    const pos = this.getMousePos(e);
+    this.startPos = pos;
+    this.lastPos = pos;
+    
+    // Create new active stroke
+    const strokeId = 'stroke_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    this.activeStroke = {
+      id: strokeId,
+      type: this.currentTool() as 'pen' | 'arrow',
+      points: [pos],
+      startPos: pos,
+      endPos: pos,
+      color: this.color(),
+      lineWidth: Math.max(5, this.videoWidth() * 0.005),
+      startTime: this.currentTime(),
+      duration: 3.0 // default 3s as requested
+    };
+    
+    // Auto select this keyframe
+    this.activeStrokeId.set(strokeId);
   }
 
   onPointerMove(e: MouseEvent | TouchEvent) {
-    if (!this.isPointerDown || !this.ctx || this.currentTool() === 'pointer') return;
+    if (!this.isPointerDown || !this.ctx || this.currentTool() === 'pointer' || !this.activeStroke) return;
     
     const pos = this.getMousePos(e);
     
-    if (this.currentTool() === 'pen') {
-      this.ctx.strokeStyle = this.color();
-      this.ctx.lineWidth = Math.max(5, this.videoWidth() * 0.005);
-      this.ctx.lineCap = 'round';
-      this.ctx.lineJoin = 'round';
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.lastPos.x, this.lastPos.y);
-      this.ctx.lineTo(pos.x, pos.y);
-      this.ctx.stroke();
-      this.lastPos = pos;
-    } else if (this.currentTool() === 'arrow') {
-      if (this.savedImageData) {
-        this.ctx.putImageData(this.savedImageData, 0, 0);
-      }
-      this.canvasDrawer.drawArrow(this.ctx, this.startPos.x, this.startPos.y, pos.x, pos.y, this.color(), this.videoWidth());
+    if (this.activeStroke.type === 'pen') {
+      this.activeStroke.points.push(pos);
+    } else if (this.activeStroke.type === 'arrow') {
+      this.activeStroke.endPos = pos;
     }
+    
+    // Live composition render inside drawing phase:
+    // 1. Draw already completed strokes
+    this.redrawCanvas();
+    
+    // 2. Overlay current active live stroke
+    const canvas = this.canvasEl.nativeElement;
+    drawStrokesOnContext(
+      this.ctx,
+      [this.activeStroke],
+      this.currentTime(),
+      canvas.width,
+      canvas.height,
+      this.videoWidth(),
+      this.videoHeight()
+    );
   }
 
   onPointerUp() {
+    if (this.isPointerDown && this.activeStroke) {
+      this.strokes.update(s => [...s, this.activeStroke!]);
+      this.activeStroke = null;
+      this.redrawCanvas();
+    }
     this.isPointerDown = false;
   }
   
   clearCanvas() {
+    this.strokes.set([]);
+    this.activeStrokeId.set(null);
     if (this.ctx && this.canvasEl) {
       this.ctx.clearRect(0, 0, this.canvasEl.nativeElement.width, this.canvasEl.nativeElement.height);
     }
+  }
+
+  deleteStroke(id: string) {
+    this.strokes.update(all => all.filter(s => s.id !== id));
+    if (this.activeStrokeId() === id) {
+      this.activeStrokeId.set(null);
+    }
+    this.redrawCanvas();
+  }
+
+  updateStrokeStartTime(id: string, newTime: number) {
+    const validTime = Math.max(0, Math.min(this.videoDuration(), Number(newTime)));
+    this.strokes.update(all => all.map(s => s.id === id ? { ...s, startTime: validTime } : s));
+    this.redrawCanvas();
+  }
+
+  updateStrokeDuration(id: string, newDuration: number) {
+    const validDur = Math.max(0.1, Number(newDuration));
+    this.strokes.update(all => all.map(s => s.id === id ? { ...s, duration: validDur } : s));
+    this.redrawCanvas();
   }
 
   // --- Rendering logic ---
@@ -491,6 +602,7 @@ export class App {
       logoOpacity: this.logoOpacity(),
       logoSize: this.logoSize(),
       canvasElement: this.canvasEl.nativeElement,
+      strokes: this.strokes(),
       translations: this.translations(),
       onProgress: (pct: number) => this.progress.set(pct),
       onLog: (msg: string) => this.logs.update(l => [...l, msg]),

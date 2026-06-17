@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Stroke, drawStrokesOnContext } from './stroke.types';
 
 export interface VideoExportConfig {
   videoUrl: string;
@@ -19,6 +20,7 @@ export interface VideoExportConfig {
   logoOpacity: number;
   logoSize: number;
   canvasElement: HTMLCanvasElement;
+  strokes: Stroke[];
   translations: {
     step1: string;
     step2: string;
@@ -56,7 +58,7 @@ export class VideoExporter {
       logoPosition,
       logoOpacity,
       logoSize,
-      canvasElement,
+      strokes,
       translations,
       onProgress,
       onLog,
@@ -290,8 +292,8 @@ export class VideoExporter {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(exportVid, 0, 0, canvas.width, canvas.height);
 
-        // Draw drawing annotations
-        ctx.drawImage(canvasElement, 0, 0, canvas.width, canvas.height);
+        // Draw drawing annotations dynamically based on current export track progress
+        drawStrokesOnContext(ctx, strokes, exportVid.currentTime, canvas.width, canvas.height, videoWidth, videoHeight);
 
         // Draw watermark
         if (logoLoaded) {

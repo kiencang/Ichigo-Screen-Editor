@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
+import { Stroke, drawStrokesOnContext } from './stroke.types';
 
 export interface GifExportConfig {
   videoUrl: string;
@@ -13,6 +14,7 @@ export interface GifExportConfig {
   logoOpacity: number;
   logoSize: number;
   canvasElement: HTMLCanvasElement;
+  strokes: Stroke[];
   translations: {
     gifStep1: string;
     gifStep2: string;
@@ -41,7 +43,7 @@ export class GifExporter {
       logoPosition,
       logoOpacity,
       logoSize,
-      canvasElement,
+      strokes,
       translations,
       onProgress,
       onLog,
@@ -118,7 +120,8 @@ export class GifExporter {
         // Clear and draw combined layers
         gifCtx.clearRect(0, 0, gifWidth, gifHeight);
         gifCtx.drawImage(exportVid, 0, 0, gifWidth, gifHeight);
-        gifCtx.drawImage(canvasElement, 0, 0, gifWidth, gifHeight);
+        // Draw drawing annotations dynamically on targetGifCtx
+        drawStrokesOnContext(gifCtx, strokes, targetTime, gifWidth, gifHeight, videoWidth, videoHeight);
         
         // Draw watermark logo
         if (logoLoaded) {

@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { VideoExporter } from './video-exporter';
 import { GifExporter } from './gif-exporter';
+import { Stroke } from './stroke.types';
 
 export interface ExportConfig {
   videoUrl: string;
@@ -21,6 +22,7 @@ export interface ExportConfig {
   logoOpacity: number;
   logoSize: number;
   canvasElement: HTMLCanvasElement;
+  strokes: Stroke[];
   translations: {
     step1: string;
     step2: string;
