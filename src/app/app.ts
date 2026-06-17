@@ -8,6 +8,7 @@ import { WaveformProcessor } from './waveform-processor';
 import { CanvasDrawer } from './canvas-drawer';
 import { ExportProcessor } from './export-processor';
 import { Stroke, drawStrokesOnContext } from './stroke.types';
+import { VIDEO_FILTERS, getFilterCSS } from './filters.types';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,6 +59,14 @@ export class App {
   outputFormat = signal<string>('webm');
   audioBitrate = signal<number>(192000);
   videoBitrate = signal<number>(0); // 0 = Auto, other values are explicit bps: 2000000, 4000000, 8000000
+  
+  videoFiltersList = VIDEO_FILTERS;
+  selectedFilterId = signal<string>('none');
+  filterIntensity = signal<number>(100);
+
+  getVideoFilterStyle() {
+    return getFilterCSS(this.selectedFilterId(), this.filterIntensity());
+  }
   
   audioTracks = signal<{id: string, file: File, url: string, duration: number, waveform: number[], volume: number, trimStart: number, trimEnd: number}[]>([]);
   isExtractingBgWaveform = signal<boolean>(false);
@@ -228,7 +237,7 @@ export class App {
           url,
           duration,
           waveform,
-          volume: 20,
+          volume: 10,
           trimStart: 0,
           trimEnd: duration
         });
@@ -756,6 +765,8 @@ export class App {
       logoPosition: this.logoPosition(),
       logoOpacity: this.logoOpacity(),
       logoSize: this.logoSize(),
+      selectedFilterId: this.selectedFilterId(),
+      filterIntensity: this.filterIntensity(),
       canvasElement: this.canvasEl.nativeElement,
       strokes: this.strokes(),
       translations: this.translations(),

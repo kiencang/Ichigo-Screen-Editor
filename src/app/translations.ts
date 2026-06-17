@@ -11,6 +11,8 @@ export interface AppTranslations {
   toolArrow: string;
   clear: string;
   editorSettings: string;
+  videoFilters: string;
+  filterIntensity: string;
   overlaysAudio: string;
   addBgAudio: string;
   addWatermark: string;
@@ -70,7 +72,9 @@ export function getTranslations(lang: 'vi' | 'en'): AppTranslations {
     toolPen: isVi ? 'Vẽ tay' : 'Freehand Draw',
     toolArrow: isVi ? 'Công cụ Mũi tên' : 'Arrow Tool',
     clear: isVi ? 'Xóa nét vẽ' : 'Clear',
-    editorSettings: isVi ? 'Thiết lập ứng dụng' : 'Editor Settings',
+    editorSettings: isVi ? 'Tùy chỉnh' : 'Customization',
+    videoFilters: isVi ? 'Bộ lọc màu video' : 'Video Filter Presets',
+    filterIntensity: isVi ? 'Cường độ màu' : 'Color Intensity',
     overlaysAudio: isVi ? 'Lớp phủ & Âm thanh' : 'Overlays & Audio',
     addBgAudio: isVi ? 'Thêm file nhạc' : 'Add audio file',
     addWatermark: isVi ? 'Thêm watermark' : 'Add watermark logo',

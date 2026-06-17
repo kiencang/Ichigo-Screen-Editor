@@ -81,7 +81,8 @@
               #videoEl
               [src]="videoUrl()"
               crossorigin="anonymous"
-              class="w-full h-full block"
+              class="w-full h-full block transition-all duration-300"
+              [style.filter]="getVideoFilterStyle()"
               (loadedmetadata)="onVideoLoadedMetadata($event)"
               (timeupdate)="onTimeUpdate()"
               (play)="isPlaying.set(true)"
@@ -636,8 +637,6 @@
 
           <!-- Extra Assets -->
           <div class="flex flex-col gap-3">
-             <span class="text-sm font-medium text-neutral-400">{{ translations().overlaysAudio }}</span>
-             
               <div class="flex items-center gap-2">
                 <label for="logo-upload" class="flex-1 flex items-center gap-3 p-3 rounded-xl border border-white/5 hover:border-white/20 bg-neutral-950/50 cursor-pointer transition-colors group">
                    <mat-icon class="text-neutral-500 group-hover:text-red-400 transition-colors">image</mat-icon>
@@ -725,6 +724,43 @@
                    </div>
                 </div>
               }
+          </div>
+
+          <!-- Video Filters Section -->
+          <div class="flex flex-col gap-3">
+            <span class="text-sm font-medium text-neutral-400">
+              {{ translations().videoFilters }}
+            </span>
+            
+            <div class="grid grid-cols-2 gap-2">
+              @for (f of videoFiltersList; track f.id) {
+                <button (click)="selectedFilterId.set(f.id)"
+                        class="p-2 py-2.5 rounded-xl border cursor-pointer text-center transition-all flex flex-col items-center justify-center gap-1 group"
+                        [class.bg-red-500/10]="selectedFilterId() === f.id"
+                        [class.border-red-500/30]="selectedFilterId() === f.id"
+                        [class.text-red-400]="selectedFilterId() === f.id"
+                        [class.font-medium]="selectedFilterId() === f.id"
+                        [class.bg-neutral-950/40]="selectedFilterId() !== f.id"
+                        [class.border-white/5]="selectedFilterId() !== f.id"
+                        [class.text-neutral-400]="selectedFilterId() !== f.id"
+                        style="min-height: 48px;">
+                  <span class="text-[11px] leading-tight select-none truncate max-w-full">
+                    {{ lang() === 'vi' ? f.nameVi : f.nameEn }}
+                  </span>
+                </button>
+              }
+            </div>
+
+            @if (selectedFilterId() !== 'none') {
+              <div class="p-3 rounded-xl bg-neutral-950/45 border border-white/5 flex flex-col gap-1.5">
+                <div class="flex justify-between text-[10px] text-neutral-400">
+                  <span>{{ translations().filterIntensity }}</span>
+                  <span class="font-mono text-neutral-500">{{ filterIntensity() }}%</span>
+                </div>
+                <input type="range" [ngModel]="filterIntensity()" (ngModelChange)="filterIntensity.set($event)" min="10" max="100"
+                       class="w-full h-1 bg-neutral-800 rounded appearance-none cursor-pointer accent-red-500">
+              </div>
+            }
           </div>
 
           <!-- Volume -->
@@ -823,7 +859,7 @@
       <div class="flex items-center gap-1.5">
         <span class="font-medium text-neutral-300">Ichigo Editor</span>
         <span class="text-neutral-700">•</span>
-        <span>v1.0.6</span>
+        <span>v1.0.7</span>
       </div>
       <div class="flex flex-wrap justify-center items-center gap-1.5 font-sans">
         <a href="https://github.com/kiencang/Ichigo-Editor" target="_blank" rel="noopener noreferrer" class="hover:text-neutral-300 transition-colors cursor-pointer">GitHub</a>

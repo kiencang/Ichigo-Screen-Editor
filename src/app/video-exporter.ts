@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Stroke, drawStrokesOnContext } from './stroke.types';
+import { getFilterCSS } from './filters.types';
 
 export interface VideoExportConfig {
   videoUrl: string;
@@ -18,6 +19,8 @@ export interface VideoExportConfig {
   logoPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   logoOpacity: number;
   logoSize: number;
+  selectedFilterId?: string;
+  filterIntensity?: number;
   canvasElement: HTMLCanvasElement;
   strokes: Stroke[];
   translations: {
@@ -56,6 +59,8 @@ export class VideoExporter {
       logoPosition,
       logoOpacity,
       logoSize,
+      selectedFilterId,
+      filterIntensity,
       strokes,
       translations,
       onProgress,
@@ -289,7 +294,11 @@ export class VideoExporter {
 
         // Draw video frame
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (selectedFilterId && selectedFilterId !== 'none') {
+          ctx.filter = getFilterCSS(selectedFilterId, filterIntensity || 100);
+        }
         ctx.drawImage(exportVid, 0, 0, canvas.width, canvas.height);
+        ctx.filter = 'none';
 
         // Draw drawing annotations dynamically based on current export track progress
         drawStrokesOnContext(ctx, strokes, exportVid.currentTime, canvas.width, canvas.height, videoWidth, videoHeight);

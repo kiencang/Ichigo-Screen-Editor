@@ -20,6 +20,8 @@ export interface ExportConfig {
   logoPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   logoOpacity: number;
   logoSize: number;
+  selectedFilterId?: string;
+  filterIntensity?: number;
   canvasElement: HTMLCanvasElement;
   strokes: Stroke[];
   translations: {
