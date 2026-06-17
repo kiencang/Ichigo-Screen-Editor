@@ -59,7 +59,7 @@ export class App {
   audioBitrate = signal<number>(192000);
   videoBitrate = signal<number>(0); // 0 = Auto, other values are explicit bps: 2000000, 4000000, 8000000
   
-  audioTracks = signal<{id: string, file: File, url: string, duration: number, waveform: number[], volume: number}[]>([]);
+  audioTracks = signal<{id: string, file: File, url: string, duration: number, waveform: number[], volume: number, trimStart: number, trimEnd: number}[]>([]);
   isExtractingBgWaveform = signal<boolean>(false);
   logoFile = signal<File | null>(null);
   logoPreviewUrl = signal<string | null>(null);
@@ -67,6 +67,10 @@ export class App {
   logoOpacity = signal<number>(50);
   logoSize = signal<number>(15);
   previewAudio: HTMLAudioElement | null = null;
+  playingTrackId = signal<string | null>(null);
+  isolatedPreviewTime = signal<number>(0);
+  isolatedPreviewAudio: HTMLAudioElement | null = null;
+  isolatedPreviewInterval: any = null;
   
   currentTool = signal<'pointer' | 'pen' | 'arrow'>('pointer');
   color = signal<string>('#ef4444'); // Tailwind red-500
@@ -201,7 +205,7 @@ export class App {
       input.value = ''; // Reset input
       this.isExtractingBgWaveform.set(true);
 
-      const newTracks: {id: string, file: File, url: string, duration: number, waveform: number[], volume: number}[] = [];
+      const newTracks: {id: string, file: File, url: string, duration: number, waveform: number[], volume: number, trimStart: number, trimEnd: number}[] = [];
       for (const file of files) {
         const url = URL.createObjectURL(file);
         const duration = await new Promise<number>((resolve) => {
@@ -224,7 +228,9 @@ export class App {
           url,
           duration,
           waveform,
-          volume: 20
+          volume: 20,
+          trimStart: 0,
+          trimEnd: duration
         });
       }
       
@@ -247,7 +253,79 @@ export class App {
 
   setTrackVolume(id: string, volume: number) {
     this.audioTracks.update(tracks => tracks.map(t => t.id === id ? { ...t, volume } : t));
+    
+    if (this.playingTrackId() === id && this.isolatedPreviewAudio) {
+      this.isolatedPreviewAudio.volume = volume / 100;
+    }
+    
     this.syncBackgroundAudio();
+  }
+
+  setTrackTrimStart(id: string, start: number) {
+    this.audioTracks.update(tracks => tracks.map(t => {
+      if (t.id === id) {
+          const newStart = Math.min(start, t.trimEnd - 0.1);
+          return { ...t, trimStart: newStart };
+      }
+      return t;
+    }));
+    this.syncBackgroundAudio();
+  }
+
+  setTrackTrimEnd(id: string, end: number) {
+    this.audioTracks.update(tracks => tracks.map(t => {
+      if (t.id === id) {
+          const newEnd = Math.max(end, t.trimStart + 0.1);
+          return { ...t, trimEnd: newEnd };
+      }
+      return t;
+    }));
+    this.syncBackgroundAudio();
+  }
+
+  previewSpecificTrack(id: string) {
+    if (this.playingTrackId() === id) {
+      this.stopIsolatedPreview();
+      return;
+    }
+
+    this.stopIsolatedPreview();
+
+    if (this.isPlaying()) {
+      this.togglePlay();
+    }
+
+    const track = this.audioTracks().find(t => t.id === id);
+    if (!track) return;
+
+    this.playingTrackId.set(id);
+    this.isolatedPreviewTime.set(track.trimStart);
+    this.isolatedPreviewAudio = new Audio(track.url);
+    this.isolatedPreviewAudio.currentTime = track.trimStart;
+    this.isolatedPreviewAudio.volume = track.volume / 100;
+    this.isolatedPreviewAudio.play().catch(e => console.error(e));
+
+    this.isolatedPreviewInterval = setInterval(() => {
+        if (this.isolatedPreviewAudio) {
+            this.isolatedPreviewTime.set(this.isolatedPreviewAudio.currentTime);
+            if (this.isolatedPreviewAudio.currentTime >= track.trimEnd) {
+                this.stopIsolatedPreview();
+            }
+        }
+    }, 1000 / 30); // ~30fps update
+  }
+
+  stopIsolatedPreview() {
+    if (this.isolatedPreviewAudio) {
+        this.isolatedPreviewAudio.pause();
+        this.isolatedPreviewAudio = null;
+    }
+    if (this.isolatedPreviewInterval) {
+        clearInterval(this.isolatedPreviewInterval);
+        this.isolatedPreviewInterval = null;
+    }
+    this.isolatedPreviewTime.set(0);
+    this.playingTrackId.set(null);
   }
 
   setVideoVolume(val: number) {
@@ -301,6 +379,7 @@ export class App {
   }
 
   togglePlay() {
+    this.stopIsolatedPreview();
     if (!this.videoEl) return;
     const video = this.videoEl.nativeElement;
     if (video.paused) {
@@ -319,6 +398,7 @@ export class App {
   }
 
   seekTo(seconds: number) {
+    this.stopIsolatedPreview();
     if (!this.videoEl) return;
     const video = this.videoEl.nativeElement;
     const target = Math.max(0, Math.min(this.videoDuration(), seconds));
@@ -363,6 +443,8 @@ export class App {
   }
 
   syncBackgroundAudio() {
+    if (this.playingTrackId()) return;
+
     if (this.audioTracks().length === 0) {
       if (this.previewAudio) {
         this.previewAudio.pause();
@@ -380,12 +462,13 @@ export class App {
     let trackLocalTime = 0;
     
     for (const track of this.audioTracks()) {
-      if (relativeTime >= accumulatedTime && relativeTime < accumulatedTime + track.duration) {
+      const activeDuration = track.trimEnd - track.trimStart;
+      if (relativeTime >= accumulatedTime && relativeTime < accumulatedTime + activeDuration) {
         targetTrack = track;
-        trackLocalTime = relativeTime - accumulatedTime;
+        trackLocalTime = track.trimStart + (relativeTime - accumulatedTime);
         break;
       }
-      accumulatedTime += track.duration;
+      accumulatedTime += activeDuration;
     }
 
     if (!targetTrack) {

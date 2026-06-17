@@ -15,7 +15,7 @@ export interface ExportConfig {
   videoFile: File | null;
   audioBitrate: number;
   videoBitrate: number;
-  audioTracks: {id: string, file: File, url: string, duration: number, waveform: number[], volume: number}[];
+  audioTracks: {id: string, file: File, url: string, duration: number, waveform: number[], volume: number, trimStart: number, trimEnd: number}[];
   logoFile: File | null;
   logoPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   logoOpacity: number;

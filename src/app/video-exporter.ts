@@ -13,7 +13,7 @@ export interface VideoExportConfig {
   videoFile: File | null;
   audioBitrate: number;
   videoBitrate: number;
-  audioTracks: {id: string, file: File, url: string, duration: number, waveform: number[], volume: number}[];
+  audioTracks: {id: string, file: File, url: string, duration: number, waveform: number[], volume: number, trimStart: number, trimEnd: number}[];
   logoFile: File | null;
   logoPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   logoOpacity: number;
@@ -173,7 +173,7 @@ export class VideoExporter {
       }
 
       // Background audio overlay
-      const bgAudioElements: { el: HTMLAudioElement, start: number, end: number, finished: boolean }[] = [];
+      const bgAudioElements: { el: HTMLAudioElement, start: number, end: number, finished: boolean, trackTrimStart: number }[] = [];
       if (audioTracks && audioTracks.length > 0) {
         let accumulated = 0;
         for (const track of audioTracks) {
@@ -192,8 +192,9 @@ export class VideoExporter {
             bgGain.connect(silentHardwareGain2);
             silentHardwareGain2.connect(audioCtx.destination);
 
-            bgAudioElements.push({ el: audioEl, start: accumulated, end: accumulated + track.duration, finished: false });
-            accumulated += track.duration;
+            const activeDuration = track.trimEnd - track.trimStart;
+            bgAudioElements.push({ el: audioEl, start: accumulated, end: accumulated + activeDuration, finished: false, trackTrimStart: track.trimStart });
+            accumulated += activeDuration;
             hasAudioNode = true;
           } catch (bgAudioErr) {
             console.error('Failed to route background audio overlay:', bgAudioErr);
@@ -298,8 +299,9 @@ export class VideoExporter {
         for (const bg of bgAudioElements) {
            if (vidTime >= bg.start && vidTime < bg.end) {
               if (bg.el.paused && !bg.finished) {
-                 if (Math.abs(bg.el.currentTime - (vidTime - bg.start)) > 0.3) {
-                     bg.el.currentTime = vidTime - bg.start;
+                 const targetTime = bg.trackTrimStart + (vidTime - bg.start);
+                 if (Math.abs(bg.el.currentTime - targetTime) > 0.3) {
+                     bg.el.currentTime = targetTime;
                  }
                  bg.el.play().catch(() => void 0);
               }
