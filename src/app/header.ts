@@ -11,7 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
         <div class="w-8 h-8 rounded-lg bg-red-500/20 text-red-500 flex items-center justify-center">
           <mat-icon class="text-xl">movie_edit</mat-icon>
         </div>
-        <h1 class="text-xl font-medium tracking-tight">Ichigo Editor</h1>
+        <h1 class="text-xl font-medium tracking-tight">Ichigo Screen Editor</h1>
       </div>
 
       <!-- Language Selector Toggle -->

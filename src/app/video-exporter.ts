@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Stroke, drawStrokesOnContext } from './stroke.types';
 import { AppliedFilter, getAppliedFiltersCSSAtTime } from './filters.types';
 import { VideoSegment } from './segments';
+import { ZoomRegion, getZoomAtTime } from './zoom.types';
 
 export interface VideoExportConfig {
   videoUrl: string;
@@ -20,6 +21,7 @@ export interface VideoExportConfig {
   logoOpacity: number;
   logoSize: number;
   appliedFilters?: AppliedFilter[];
+  zoomRegions?: ZoomRegion[];
   canvasElement: HTMLCanvasElement;
   strokes: Stroke[];
   translations: {
@@ -58,6 +60,7 @@ export class VideoExporter {
       logoOpacity,
       logoSize,
       appliedFilters,
+      zoomRegions,
       strokes,
       translations,
       onProgress,
@@ -330,8 +333,19 @@ export class VideoExporter {
           return;
         }
 
-        // Draw video frame
+        // Draw video frame with optional zoom & pan (Dynamic Focus)
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.save();
+        const zoom = getZoomAtTime(zoomRegions || [], exportVid.currentTime);
+        if (zoom.scale > 1.0) {
+          const focusX = canvas.width * (zoom.panX / 100);
+          const focusY = canvas.height * (zoom.panY / 100);
+          ctx.translate(focusX, focusY);
+          ctx.scale(zoom.scale, zoom.scale);
+          ctx.translate(-focusX, -focusY);
+        }
+
         const activeFilterStyle = getAppliedFiltersCSSAtTime(appliedFilters || [], exportVid.currentTime);
         ctx.filter = activeFilterStyle;
         ctx.drawImage(exportVid, 0, 0, canvas.width, canvas.height);
@@ -339,6 +353,8 @@ export class VideoExporter {
 
         // Draw drawing annotations dynamically based on current original video time
         drawStrokesOnContext(ctx, strokes, exportVid.currentTime, canvas.width, canvas.height, videoWidth, videoHeight);
+        
+        ctx.restore();
 
         // Manage background audio files relative to virtual time
         const vidTime = completedDuration + Math.max(0, exportVid.currentTime - currentSeg.start);

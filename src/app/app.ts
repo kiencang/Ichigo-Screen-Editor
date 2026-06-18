@@ -8,6 +8,7 @@ import { WaveformProcessor } from './waveform-processor';
 import { CanvasDrawer } from './canvas-drawer';
 import { ExportProcessor } from './export-processor';
 import { VIDEO_FILTERS, AppliedFilter, getAppliedFiltersCSSAtTime } from './filters.types';
+import { ZoomRegion, getZoomAtTime } from './zoom.types';
 import { BackgroundAudio } from './background-audio';
 import { BackgroundAudioPanel } from './background-audio-panel';
 import { VideoSegments } from './video-segments';
@@ -20,11 +21,12 @@ import { AppFooter } from './footer';
 import { UploadPanel } from './upload-panel';
 import { AppStrokesList } from './strokes-list';
 import { AppAppliedFiltersList } from './applied-filters-list';
+import { AppZoomRegionsList } from './zoom-regions-list';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
-  imports: [FormsModule, MatIconModule, DecimalPipe, VideoFilters, ExportPanel, WatermarkPanel, StrokePropertiesPanel, AppHeader, AppFooter, UploadPanel, AppStrokesList, AppAppliedFiltersList, BackgroundAudioPanel],
+  imports: [FormsModule, MatIconModule, DecimalPipe, VideoFilters, ExportPanel, WatermarkPanel, StrokePropertiesPanel, AppHeader, AppFooter, UploadPanel, AppStrokesList, AppAppliedFiltersList, AppZoomRegionsList, BackgroundAudioPanel],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -151,6 +153,103 @@ export class App {
       case 'line': return isVi ? 'Đường thẳng' : 'Straight Line';
       default: return type;
     }
+  }
+
+  zoomRegions = signal<ZoomRegion[]>([]);
+  activeZoomId = signal<string | null>(null);
+
+  currentActiveZoom = computed(() => {
+    return this.zoomRegions().find(z => z.id === this.activeZoomId()) || null;
+  });
+
+  currentZoomState = computed(() => {
+    return getZoomAtTime(this.zoomRegions(), this.currentTime());
+  });
+
+  getZoomTransformStyle() {
+    const state = this.currentZoomState();
+    return `scale(${state.scale})`;
+  }
+
+  getZoomOriginStyle() {
+    const state = this.currentZoomState();
+    return `${state.panX}% ${state.panY}%`;
+  }
+
+  addZoomRegion() {
+    if (!this.videoUrl()) return;
+    const current = this.currentTime();
+    const videoDur = this.videoDuration();
+    if (videoDur <= 0) return;
+    const dur = Math.min(3, Math.max(0.1, videoDur - current));
+    if (dur <= 0) return;
+
+    const newZoom: ZoomRegion = {
+      id: 'zoom_' + Math.random().toString(36).substring(2, 11),
+      startTime: current,
+      duration: dur,
+      scale: 2.0,
+      panX: 25,
+      panY: 25
+    };
+
+    this.zoomRegions.update(zooms => [...zooms, newZoom]);
+    this.activeZoomId.set(newZoom.id);
+    this.logs.update(l => [
+      ...l,
+      this.lang() === 'vi' 
+        ? `[Thu phóng] Đã thêm vùng thu phóng 2.0x tại ${current.toFixed(2)}s hiển thị trong ${dur.toFixed(1)}s` 
+        : `[Zoom & Pan] Added 2.0x zoom region at ${current.toFixed(2)}s for ${dur.toFixed(1)}s`
+    ]);
+  }
+
+  deleteZoomRegion(id: string) {
+    this.zoomRegions.update(all => all.filter(z => z.id !== id));
+    if (this.activeZoomId() === id) {
+      this.activeZoomId.set(null);
+    }
+  }
+
+  updateZoomStartTime(id: string, newTime: number) {
+    const validTime = Math.max(0, Math.min(this.videoDuration(), Number(newTime)));
+    this.zoomRegions.update(all => all.map(z => z.id === id ? { ...z, startTime: validTime } : z));
+  }
+
+  updateZoomDuration(id: string, newDuration: number) {
+    const validDur = Math.max(0.1, Math.min(this.videoDuration(), Number(newDuration)));
+    this.zoomRegions.update(all => all.map(z => z.id === id ? { ...z, duration: validDur } : z));
+  }
+
+  updateZoomScale(id: string, newScale: number) {
+    const validScale = Math.max(1.0, Math.min(4.0, Number(newScale)));
+    this.zoomRegions.update(all => all.map(z => z.id === id ? { ...z, scale: validScale } : z));
+  }
+
+  updateZoomPanX(id: string, newPanX: number) {
+    const validX = Math.max(0, Math.min(100, Number(newPanX)));
+    this.zoomRegions.update(all => all.map(z => z.id === id ? { ...z, panX: validX } : z));
+  }
+
+  updateZoomPanY(id: string, newPanY: number) {
+    const validY = Math.max(0, Math.min(100, Number(newPanY)));
+    this.zoomRegions.update(all => all.map(z => z.id === id ? { ...z, panY: validY } : z));
+  }
+
+  getZoomQuadrantIcon(panX: number, panY: number): string {
+    if (panX === 25 && panY === 25) return 'north_west';
+    if (panX === 75 && panY === 25) return 'north_east';
+    if (panX === 25 && panY === 75) return 'south_west';
+    if (panX === 75 && panY === 75) return 'south_east';
+    return 'zoom_in';
+  }
+
+  getZoomQuadrantLabelShort(panX: number, panY: number): string {
+    const isVi = this.lang() === 'vi';
+    if (panX === 25 && panY === 25) return isVi ? 'Trên - Trái' : 'Top Left';
+    if (panX === 75 && panY === 25) return isVi ? 'Trên - Phải' : 'Top Right';
+    if (panX === 25 && panY === 75) return isVi ? 'Dưới - Trái' : 'Btm Left';
+    if (panX === 75 && panY === 75) return isVi ? 'Dưới - Phải' : 'Btm Right';
+    return isVi ? 'Trung tâm' : 'Center';
   }
   
   audioTracks = this.backgroundAudio.audioTracks;
@@ -682,6 +781,7 @@ export class App {
       logoOpacity: this.logoOpacity(),
       logoSize: this.logoSize(),
       appliedFilters: this.appliedFilters(),
+      zoomRegions: this.zoomRegions(),
       canvasElement: this.canvasEl.nativeElement,
       strokes: this.strokes(),
       translations: this.translations(),

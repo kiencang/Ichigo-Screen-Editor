@@ -63,7 +63,7 @@ export interface AppTranslations {
 export function getTranslations(lang: 'vi' | 'en'): AppTranslations {
   const isVi = lang === 'vi';
   return {
-    appName: 'Ichigo Editor',
+    appName: 'Ichigo Screen Editor',
     selectVideo: isVi ? 'Chọn video để chỉnh sửa' : 'Select a video to edit',
     processDevice: isVi 
       ? 'Video của bạn được xử lý hoàn toàn trên thiết bị của bạn. Không ghi nhận hoặc gửi bất kỳ dữ liệu nào lên máy chủ.' 

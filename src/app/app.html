@@ -34,14 +34,15 @@
       <div class="col-span-1 lg:col-span-9 flex flex-col gap-6">
         
         <div class="bg-black rounded-2xl overflow-hidden relative shadow-md ring-1 ring-white/10 flex items-center justify-center mx-auto w-full max-h-[60vh]">
-          <div class="relative max-w-full max-h-[60vh] flex items-center justify-center"
-               [style.aspect-ratio]="videoWidth() && videoHeight() ? (videoWidth() + '/' + videoHeight()) : '16/9'">
+          <div class="relative transition-all duration-300 ease-out"
+               [style.transform]="getZoomTransformStyle()"
+               [style.transform-origin]="getZoomOriginStyle()">
             <!-- Video element -->
             <video 
               #videoEl
               [src]="videoUrl()"
               crossorigin="anonymous"
-              class="w-full h-full block transition-all duration-300"
+              class="max-w-full max-h-[60vh] block transition-all duration-300 mx-auto"
               [style.filter]="getVideoFilterStyle()"
               (loadedmetadata)="onVideoLoadedMetadata($event)"
               (timeupdate)="onTimeUpdate()"
@@ -288,6 +289,41 @@
 
             </div>
 
+            <!-- Zoom Focus Timeline Row -->
+            @if (zoomRegions().length > 0) {
+              <div class="relative h-8 bg-neutral-900/40 border border-white/5 rounded-xl overflow-hidden mt-1 flex items-center">
+                <div class="absolute inset-y-0 left-0 flex items-center z-10 text-[9px] text-emerald-500 font-mono pl-3 pointer-events-none opacity-45">
+                  <mat-icon style="font-size: 13px; width: 13px; height: 13px; display: flex; align-items: center; justify-content: center;">zoom_in</mat-icon>
+                  <span class="ml-1 uppercase tracking-wider font-bold">{{ lang() === 'vi' ? 'Tiêu điểm (Zoom 2x)' : 'ZOOM FOCUS 2x' }}</span>
+                </div>
+
+                <div class="absolute inset-y-0 left-0 right-0 pointer-events-auto flex items-center">
+                  @for (zoom of zoomRegions(); track zoom.id) {
+                    <div class="absolute top-1 bottom-1 rounded-lg cursor-pointer border hover:scale-y-105 hover:brightness-110 z-20 transition-all flex items-center gap-1.5 px-2.5 shadow-sm text-[10px]"
+                         [style.left.%]="(zoom.startTime / videoDuration()) * 100"
+                         [style.width.%]="(zoom.duration / videoDuration()) * 100"
+                         [class.bg-emerald-500/25]="activeZoomId() === zoom.id"
+                         [class.border-emerald-500/40]="activeZoomId() === zoom.id"
+                         [class.ring-1]="activeZoomId() === zoom.id"
+                         [class.ring-emerald-400/30]="activeZoomId() === zoom.id"
+                         [class.bg-neutral-800/80]="activeZoomId() !== zoom.id"
+                         [class.border-white/5]="activeZoomId() !== zoom.id"
+                         [class.text-emerald-400]="activeZoomId() === zoom.id"
+                         [class.text-neutral-300]="activeZoomId() !== zoom.id"
+                         (mousedown)="$event.stopPropagation(); activeZoomId.set(zoom.id); seekTo(zoom.startTime)"
+                         (touchstart)="$event.stopPropagation(); activeZoomId.set(zoom.id); seekTo(zoom.startTime)">
+                      <mat-icon style="font-size: 11px; width: 11px; height: 11px; display: flex; align-items: center; justify-content: center;" class="text-emerald-400 shrink-0">
+                        {{ getZoomQuadrantIcon(zoom.panX, zoom.panY) }}
+                      </mat-icon>
+                      <span class="truncate font-semibold select-none leading-none text-[9px] uppercase tracking-wide">
+                        2.0x {{ getZoomQuadrantLabelShort(zoom.panX, zoom.panY) }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
             <!-- Background Music Timeline Row -->
             @if (audioTracks().length > 0 || isExtractingBgWaveform()) {
               <div class="relative h-10 bg-neutral-900/60 border border-white/5 rounded-xl overflow-hidden mt-1 flex items-center">
@@ -393,132 +429,6 @@
 
         </div>
 
-        <!-- Background Audio Tracks -->
-        <app-background-audio-panel
-          [lang]="lang()"
-          [translations]="translations()"
-          [audioTracks]="audioTracks()"
-          [playingTrackId]="playingTrackId()"
-          [isolatedPreviewTime]="isolatedPreviewTime()"
-          (audioSelected)="onAudioSelected($event)"
-          (removeTrack)="removeAudioTrack($event)"
-          (trackVolumeChanged)="setTrackVolume($event.id, $event.volume)"
-          (trackTrimStartChanged)="setTrackTrimStart($event.id, $event.value)"
-          (trackTrimEndChanged)="setTrackTrimEnd($event.id, $event.value)"
-          (previewSpecificTrack)="previewSpecificTrack($event)"
-          (audioTracksReordered)="reorderAudioTracks($event)">
-        </app-background-audio-panel>
-        @if (false) {
-        <div class="p-4 rounded-2xl bg-neutral-900 border border-white/5 flex flex-col gap-3">
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-neutral-400">{{ translations().bgAudioTrack }}</span>
-              <label for="bg-audio-upload" class="px-3 py-1.5 rounded-lg bg-neutral-950 hover:bg-neutral-800 text-xs font-medium border border-white/10 cursor-pointer transition-colors text-neutral-300 flex items-center gap-1">
-                 <mat-icon style="font-size: 14px; width: 14px; height: 14px;">add</mat-icon>
-                 {{ translations().addBgAudio }}
-              </label>
-              <input id="bg-audio-upload" type="file" accept="audio/*" multiple class="hidden" (change)="onAudioSelected($event)">
-            </div>
-            
-            @if (audioTracks().length > 0) {
-              <div class="flex flex-col gap-3">
-                 @for (track of audioTracks(); track track.id; let idx = $index) {
-                    <div class="flex flex-col gap-2 p-2 rounded-xl bg-neutral-950/50 border-2 transition-colors border-emerald-500/20 hover:border-emerald-500/50"
-                         [class.!border-emerald-500]="false"
-                         [class.opacity-50]="false"
-                         (dragover)="$event.preventDefault()"
-                         (drop)="$event.preventDefault()">
-                       <div class="flex items-center justify-between group">
-                           <div class="flex items-center gap-2 overflow-hidden flex-1 cursor-grab active:cursor-grabbing relative py-1 rounded-lg hover:bg-neutral-900/50 transition-colors"
-                                draggable="true" 
-                                (dragstart)="null"
-                                (dragend)="null">
-                              <!-- Vertical indicator line for dragging -->
-                              <div class="absolute left-0 inset-y-0 w-1 bg-emerald-500/30 group-hover:bg-emerald-500/70 rounded-full transition-colors pointer-events-none"></div>
-                              <span class="text-[10px] bg-neutral-900 border border-emerald-500/20 text-neutral-400 font-mono px-1.5 py-0.5 rounded flex items-center justify-center ml-2">{{ idx + 1 }}</span>
-                              <mat-icon class="text-emerald-500/70" style="font-size: 16px; width: 16px; height: 16px;">drag_indicator</mat-icon>
-                              <span class="text-xs text-neutral-300 truncate font-medium">{{ track.file.name }}</span>
-                              <span class="text-[10px] bg-neutral-900 border border-emerald-500/20 text-neutral-400 font-mono px-1.5 py-0.5 rounded">{{ formatTimeShort(track.duration) }}</span>
-                           </div>
-                           <div class="flex items-center gap-1 ml-2">
-                              <button (click)="removeAudioTrack(track.id)" class="text-neutral-500 hover:text-red-400 bg-neutral-900 hover:bg-red-500/10 p-1 rounded-lg border border-white/5 cursor-pointer">
-                                 <mat-icon style="font-size: 14px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;">close</mat-icon>
-                              </button>
-                           </div>
-                       </div>
-                       <div class="flex flex-col gap-1.5 pl-[42px] pr-8 text-neutral-500">
-                         
-                         <!-- Volume -->
-                         <div class="flex items-center gap-2">
-                           <mat-icon style="font-size: 12px; width: 12px; height: 12px;">volume_up</mat-icon>
-                           <input type="range" [ngModel]="track.volume" (ngModelChange)="setTrackVolume(track.id, $event)" min="0" max="100" class="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
-                           <span class="text-[10px] w-6 text-right">{{ track.volume }}%</span>
-                         </div>
-                         
-                         <!-- Trim Section -->
-                         <div class="flex items-center gap-2 relative mt-2 mb-1">
-                           <mat-icon style="font-size: 12px; width: 12px; height: 12px;">content_cut</mat-icon>
-                           <div class="relative w-full h-8 bg-neutral-900 border border-white/5 rounded-lg overflow-hidden group">
-                              <!-- Waveform inside -->
-                              <div class="absolute inset-0 flex items-center justify-between px-1 gap-[1px] opacity-100 z-0 pointer-events-none">
-                                @for (amp of track.waveform; track $index) {
-                                  <div [style.height.%]="amp * 100" 
-                                       class="flex-1 min-w-[1px] max-w-[3px] rounded-full transition-all duration-300 bg-emerald-500/80 group-hover:bg-emerald-400">
-                                  </div>
-                                }
-                              </div>
-
-                              <!-- Inactive/Trimmed Out start area (grayed out) -->
-                              <div class="absolute top-0 bottom-0 left-0 bg-neutral-950/80 border-r border-white/5 pointer-events-none z-10"
-                                   [style.width.%]="(track.trimStart / track.duration) * 100">
-                              </div>
-
-                              <!-- Active (Trimmed in) Highlighted Zone -->
-                              <div class="absolute top-0 bottom-0 bg-emerald-500/10 border-y border-emerald-500/30 pointer-events-none z-10"
-                                   [style.left.%]="(track.trimStart / track.duration) * 100"
-                                   [style.width.%]="((track.trimEnd - track.trimStart) / track.duration) * 100">
-                              </div>
-
-                              <!-- Inactive/Trimmed Out end area (grayed out) -->
-                              <div class="absolute top-0 bottom-0 right-0 bg-neutral-950/80 border-l border-white/5 pointer-events-none z-10"
-                                   [style.left.%]="(track.trimEnd / track.duration) * 100"
-                                   [style.right.%]="0">
-                              </div>
-                              
-                              @if (playingTrackId() === track.id) {
-                                <!-- Playhead for isolated preview -->
-                                <div class="absolute top-0 bottom-0 w-[2px] bg-yellow-400 z-30 pointer-events-none shadow-[0_0_8px_rgba(250,204,21,0.6)]"
-                                     [style.left.%]="(isolatedPreviewTime() / track.duration) * 100">
-                                </div>
-                              }
-
-                              <!-- Inputs for trimming -->
-                              <input type="range" [min]="0" [max]="track.duration" step="0.1" [ngModel]="track.trimStart" (ngModelChange)="setTrackTrimStart(track.id, $event)"
-                                     class="absolute w-full h-full appearance-none bg-transparent cursor-pointer pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-emerald-500 [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-neutral-950 [&::-webkit-slider-thumb]:rounded z-20 outline-none">
-                              
-                              <input type="range" [min]="0" [max]="track.duration" step="0.1" [ngModel]="track.trimEnd" (ngModelChange)="setTrackTrimEnd(track.id, $event)"
-                                     class="absolute w-full h-full appearance-none bg-transparent cursor-pointer pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-emerald-500 [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-neutral-950 [&::-webkit-slider-thumb]:rounded z-20 outline-none">
-                           </div>
-                           <span class="text-[10px] font-mono whitespace-nowrap">{{ formatTimeShort(track.trimEnd - track.trimStart) }}</span>
-                         </div>
-                         
-                         <!-- Play Control Below Waveform -->
-                         <div class="flex justify-center mt-1">
-                           <button (click)="previewSpecificTrack(track.id)" class="text-emerald-500 hover:text-emerald-400 bg-neutral-900 hover:bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 cursor-pointer flex items-center gap-1 transition-colors">
-                              <mat-icon style="font-size: 16px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;">
-                                 {{ playingTrackId() === track.id ? 'stop' : 'play_arrow' }}
-                              </mat-icon>
-                              <span class="text-xs font-medium">{{ playingTrackId() === track.id ? (lang() === 'vi' ? 'Dừng phát' : 'Stop') : (lang() === 'vi' ? 'Nghe thử' : 'Play') }}</span>
-                           </button>
-                         </div>
-                         
-                       </div>
-                    </div>
-                 }
-              </div>
-            }
-        </div>
-        }
-
         <!-- Annotation Tools -->
         <div class="p-4 rounded-2xl bg-neutral-900 border border-white/5 flex flex-wrap items-center gap-4">
             <span class="text-sm font-medium text-neutral-400">{{ translations().annotationsLabel }}</span>
@@ -615,6 +525,23 @@
           (updateStrokeFontSize)="updateStrokeFontSize($event.id, $event.value)">
         </app-strokes-list>
 
+        <!-- Dynamic Zoom & Focus Timeline & properties panel -->
+        <app-zoom-regions-list
+          [zoomRegions]="zoomRegions()"
+          [activeZoomId]="activeZoomId()"
+          [videoDuration]="videoDuration()"
+          [lang]="lang()"
+          (activeZoomIdSet)="activeZoomId.set($event)"
+          (seekTo)="seekTo($event)"
+          (addZoomRegion)="addZoomRegion()"
+          (deleteZoomRegion)="deleteZoomRegion($event)"
+          (updateZoomStartTime)="updateZoomStartTime($event.id, $event.value)"
+          (updateZoomDuration)="updateZoomDuration($event.id, $event.value)"
+          (updateZoomScale)="updateZoomScale($event.id, $event.value)"
+          (updateZoomPanX)="updateZoomPanX($event.id, $event.value)"
+          (updateZoomPanY)="updateZoomPanY($event.id, $event.value)">
+        </app-zoom-regions-list>
+
         <!-- Video Filter Timeline & properties panel -->
         <app-applied-filters-list
           [appliedFilters]="appliedFilters()"
@@ -629,6 +556,132 @@
           (updateFilterDuration)="updateFilterDuration($event.id, $event.value)"
           (updateFilterIntensity)="updateFilterIntensity($event.id, $event.value)">
         </app-applied-filters-list>
+
+        <!-- Background Audio Tracks -->
+        <app-background-audio-panel
+          [lang]="lang()"
+          [translations]="translations()"
+          [audioTracks]="audioTracks()"
+          [playingTrackId]="playingTrackId()"
+          [isolatedPreviewTime]="isolatedPreviewTime()"
+          (audioSelected)="onAudioSelected($event)"
+          (removeTrack)="removeAudioTrack($event)"
+          (trackVolumeChanged)="setTrackVolume($event.id, $event.volume)"
+          (trackTrimStartChanged)="setTrackTrimStart($event.id, $event.value)"
+          (trackTrimEndChanged)="setTrackTrimEnd($event.id, $event.value)"
+          (previewSpecificTrack)="previewSpecificTrack($event)"
+          (audioTracksReordered)="reorderAudioTracks($event)">
+        </app-background-audio-panel>
+        @if (false) {
+        <div class="p-4 rounded-2xl bg-neutral-900 border border-white/5 flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-neutral-400">{{ translations().bgAudioTrack }}</span>
+              <label for="bg-audio-upload" class="px-3 py-1.5 rounded-lg bg-neutral-950 hover:bg-neutral-800 text-xs font-medium border border-white/10 cursor-pointer transition-colors text-neutral-300 flex items-center gap-1">
+                 <mat-icon style="font-size: 14px; width: 14px; height: 14px;">add</mat-icon>
+                 {{ translations().addBgAudio }}
+              </label>
+              <input id="bg-audio-upload" type="file" accept="audio/*" multiple class="hidden" (change)="onAudioSelected($event)">
+            </div>
+            
+            @if (audioTracks().length > 0) {
+              <div class="flex flex-col gap-3">
+                 @for (track of audioTracks(); track track.id; let idx = $index) {
+                    <div class="flex flex-col gap-2 p-2 rounded-xl bg-neutral-950/50 border-2 transition-colors border-emerald-500/20 hover:border-emerald-500/50"
+                         [class.!border-emerald-500]="false"
+                         [class.opacity-50]="false"
+                         (dragover)="$event.preventDefault()"
+                         (drop)="$event.preventDefault()">
+                       <div class="flex items-center justify-between group">
+                            <div class="flex items-center gap-2 overflow-hidden flex-1 cursor-grab active:cursor-grabbing relative py-1 rounded-lg hover:bg-neutral-900/50 transition-colors"
+                                 draggable="true" 
+                                 (dragstart)="null"
+                                 (dragend)="null">
+                              <!-- Vertical indicator line for dragging -->
+                              <div class="absolute left-0 inset-y-0 w-1 bg-emerald-500/30 group-hover:bg-emerald-500/70 rounded-full transition-colors pointer-events-none"></div>
+                              <span class="text-[10px] bg-neutral-900 border border-emerald-500/20 text-neutral-400 font-mono px-1.5 py-0.5 rounded flex items-center justify-center ml-2">{{ idx + 1 }}</span>
+                              <mat-icon class="text-emerald-500/70" style="font-size: 16px; width: 16px; height: 16px;">drag_indicator</mat-icon>
+                              <span class="text-xs text-neutral-300 truncate font-medium">{{ track.file.name }}</span>
+                              <span class="text-[10px] bg-neutral-900 border border-emerald-500/20 text-neutral-400 font-mono px-1.5 py-0.5 rounded">{{ formatTimeShort(track.duration) }}</span>
+                            </div>
+                           <div class="flex items-center gap-1 ml-2">
+                              <button (click)="removeAudioTrack(track.id)" class="text-neutral-500 hover:text-red-400 bg-neutral-900 hover:bg-red-500/10 p-1 rounded-lg border border-white/5 cursor-pointer">
+                                 <mat-icon style="font-size: 14px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;">close</mat-icon>
+                              </button>
+                           </div>
+                       </div>
+                       <div class="flex flex-col gap-1.5 pl-[42px] pr-8 text-neutral-500">
+                         
+                         <!-- Volume -->
+                         <div class="flex items-center gap-2">
+                           <mat-icon style="font-size: 12px; width: 12px; height: 12px;">volume_up</mat-icon>
+                           <input type="range" [ngModel]="track.volume" (ngModelChange)="setTrackVolume(track.id, $event)" min="0" max="100" class="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                           <span class="text-[10px] w-6 text-right">{{ track.volume }}%</span>
+                         </div>
+                         
+                         <!-- Trim Section -->
+                         <div class="flex items-center gap-2 relative mt-2 mb-1">
+                           <mat-icon style="font-size: 12px; width: 12px; height: 12px;">content_cut</mat-icon>
+                           <div class="relative w-full h-8 bg-neutral-900 border border-white/5 rounded-lg overflow-hidden group">
+                              <!-- Waveform inside -->
+                              <div class="absolute inset-0 flex items-center justify-between px-1 gap-[1px] opacity-100 z-0 pointer-events-none">
+                                @for (amp of track.waveform; track $index) {
+                                  <div [style.height.%]="amp * 100" 
+                                       class="flex-1 min-w-[1px] max-w-[3px] rounded-full transition-all duration-300 bg-emerald-500/80 group-hover:bg-emerald-400">
+                                  </div>
+                                }
+                              </div>
+
+                              <!-- Inactive/Trimmed Out start area (grayed out) -->
+                              <div class="absolute top-0 bottom-0 left-0 bg-neutral-950/80 border-r border-white/5 pointer-events-none z-10"
+                                   [style.width.%]="(track.trimStart / track.duration) * 100">
+                              </div>
+
+                              <!-- Active (Trimmed in) Highlighted Zone -->
+                              <div class="absolute top-0 bottom-0 bg-emerald-500/10 border-y border-emerald-500/30 pointer-events-none z-10"
+                                   [style.left.%]="(track.trimStart / track.duration) * 100"
+                                   [style.width.%]="((track.trimEnd - track.trimStart) / track.duration) * 100">
+                              </div>
+
+                              <!-- Inactive/Trimmed Out end area (grayed out) -->
+                              <div class="absolute top-0 bottom-0 right-0 bg-neutral-950/80 border-l border-white/5 pointer-events-none z-10"
+                                   [style.left.%]="(track.trimEnd / track.duration) * 100"
+                                   [style.right.%]="0">
+                              </div>
+                              
+                              @if (playingTrackId() === track.id) {
+                                <!-- Playhead for isolated preview -->
+                                <div class="absolute top-0 bottom-0 w-[2px] bg-yellow-400 z-30 pointer-events-none shadow-[0_0_8px_rgba(250,204,21,0.6)]"
+                                     [style.left.%]="(isolatedPreviewTime() / track.duration) * 100">
+                                </div>
+                              }
+
+                              <!-- Inputs for trimming -->
+                              <input type="range" [min]="0" [max]="track.duration" step="0.1" [ngModel]="track.trimStart" (ngModelChange)="setTrackTrimStart(track.id, $event)"
+                                     class="absolute w-full h-full appearance-none bg-transparent cursor-pointer pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-emerald-500 [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-neutral-950 [&::-webkit-slider-thumb]:rounded z-20 outline-none">
+                              
+                              <input type="range" [min]="0" [max]="track.duration" step="0.1" [ngModel]="track.trimEnd" (ngModelChange)="setTrackTrimEnd(track.id, $event)"
+                                     class="absolute w-full h-full appearance-none bg-transparent cursor-pointer pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-8 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:bg-emerald-500 [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-neutral-950 [&::-webkit-slider-thumb]:rounded z-20 outline-none">
+                           </div>
+                           <span class="text-[10px] font-mono whitespace-nowrap">{{ formatTimeShort(track.trimEnd - track.trimStart) }}</span>
+                         </div>
+                         
+                         <!-- Play Control Below Waveform -->
+                         <div class="flex justify-center mt-1">
+                           <button (click)="previewSpecificTrack(track.id)" class="text-emerald-500 hover:text-emerald-400 bg-neutral-900 hover:bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 cursor-pointer flex items-center gap-1 transition-colors">
+                              <mat-icon style="font-size: 16px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;">
+                                 {{ playingTrackId() === track.id ? 'stop' : 'play_arrow' }}
+                              </mat-icon>
+                              <span class="text-xs font-medium">{{ playingTrackId() === track.id ? (lang() === 'vi' ? 'Dừng phát' : 'Stop') : (lang() === 'vi' ? 'Nghe thử' : 'Play') }}</span>
+                           </button>
+                         </div>
+                         
+                       </div>
+                    </div>
+                 }
+              </div>
+            }
+        </div>
+        }
       </div>
 
       <!-- Settings Sidebar -->
@@ -657,6 +710,23 @@
             (filterSelected)="addAppliedFilter($event)" />
 
         </div>
+
+        <!-- Zoom & Focus Areas in Right Column Sidebar -->
+        <app-zoom-regions-list
+          [zoomRegions]="zoomRegions()"
+          [activeZoomId]="activeZoomId()"
+          [videoDuration]="videoDuration()"
+          [lang]="lang()"
+          (activeZoomIdSet)="activeZoomId.set($event)"
+          (seekTo)="seekTo($event)"
+          (addZoomRegion)="addZoomRegion()"
+          (deleteZoomRegion)="deleteZoomRegion($event)"
+          (updateZoomStartTime)="updateZoomStartTime($event.id, $event.value)"
+          (updateZoomDuration)="updateZoomDuration($event.id, $event.value)"
+          (updateZoomScale)="updateZoomScale($event.id, $event.value)"
+          (updateZoomPanX)="updateZoomPanX($event.id, $event.value)"
+          (updateZoomPanY)="updateZoomPanY($event.id, $event.value)">
+        </app-zoom-regions-list>
 
         <!-- Export Panel -->
         <app-export-panel
