@@ -7,16 +7,23 @@ import { TimeFormatter } from './time-formatter';
 import { WaveformProcessor } from './waveform-processor';
 import { CanvasDrawer } from './canvas-drawer';
 import { ExportProcessor } from './export-processor';
-import { VIDEO_FILTERS, getFilterCSS } from './filters.types';
+import { VIDEO_FILTERS, AppliedFilter, getAppliedFiltersCSSAtTime } from './filters.types';
 import { BackgroundAudio } from './background-audio';
 import { VideoSegments } from './video-segments';
 import { VideoFilters } from './video-filters';
 import { ExportPanel } from './export-panel';
+import { WatermarkPanel } from './watermark-panel';
+import { StrokePropertiesPanel } from './stroke-properties-panel';
+import { AppHeader } from './header';
+import { AppFooter } from './footer';
+import { UploadPanel } from './upload-panel';
+import { AppStrokesList } from './strokes-list';
+import { AppAppliedFiltersList } from './applied-filters-list';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
-  imports: [FormsModule, MatIconModule, DecimalPipe, VideoFilters, ExportPanel],
+  imports: [FormsModule, MatIconModule, DecimalPipe, VideoFilters, ExportPanel, WatermarkPanel, StrokePropertiesPanel, AppHeader, AppFooter, UploadPanel, AppStrokesList, AppAppliedFiltersList],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -68,11 +75,81 @@ export class App {
   videoBitrate = signal<number>(0); // 0 = Auto, other values are explicit bps: 2000000, 4000000, 8000000
   
   videoFiltersList = VIDEO_FILTERS;
-  selectedFilterId = signal<string>('none');
-  filterIntensity = signal<number>(100);
+  appliedFilters = signal<AppliedFilter[]>([]);
+  activeFilterId = signal<string | null>(null);
+
+  currentActiveFilter = computed(() => {
+    return this.appliedFilters().find(f => f.id === this.activeFilterId()) || null;
+  });
 
   getVideoFilterStyle() {
-    return getFilterCSS(this.selectedFilterId(), this.filterIntensity());
+    return getAppliedFiltersCSSAtTime(this.appliedFilters(), this.currentTime());
+  }
+
+  addAppliedFilter(presetId: string) {
+    if (!this.videoUrl()) return;
+    const current = this.currentTime();
+    const videoDur = this.videoDuration();
+    if (videoDur <= 0) return;
+    const dur = Math.min(3, Math.max(0.1, videoDur - current));
+    if (dur <= 0) return;
+
+    const newFilter: AppliedFilter = {
+      id: 'filter_' + Math.random().toString(36).substring(2, 11),
+      presetId: presetId,
+      startTime: current,
+      duration: dur,
+      intensity: 100
+    };
+
+    this.appliedFilters.update(filters => [...filters, newFilter]);
+    this.activeFilterId.set(newFilter.id);
+    this.logs.update(l => [
+      ...l,
+      this.lang() === 'vi' 
+        ? `[Bộ lọc] Đã thêm bộ lọc ${presetId} tại ${current.toFixed(2)}s hiển thị trong ${dur.toFixed(1)}s` 
+        : `[Filter] Added ${presetId} filter at ${current.toFixed(2)}s for ${dur.toFixed(1)}s`
+    ]);
+  }
+
+  deleteAppliedFilter(id: string) {
+    this.appliedFilters.update(all => all.filter(f => f.id !== id));
+    if (this.activeFilterId() === id) {
+      this.activeFilterId.set(null);
+    }
+  }
+
+  updateFilterStartTime(id: string, newTime: number) {
+    const validTime = Math.max(0, Math.min(this.videoDuration(), Number(newTime)));
+    this.appliedFilters.update(all => all.map(f => f.id === id ? { ...f, startTime: validTime } : f));
+  }
+
+  updateFilterDuration(id: string, newDuration: number) {
+    const validDur = Math.max(0.1, Math.min(this.videoDuration(), Number(newDuration)));
+    this.appliedFilters.update(all => all.map(f => f.id === id ? { ...f, duration: validDur } : f));
+  }
+
+  updateFilterIntensity(id: string, intensity: number) {
+    const validIntensity = Math.max(10, Math.min(100, Number(intensity)));
+    this.appliedFilters.update(all => all.map(f => f.id === id ? { ...f, intensity: validIntensity } : f));
+  }
+
+  getFilterPresetName(presetId: string): string {
+    const preset = this.videoFiltersList.find(f => f.id === presetId);
+    if (!preset) return presetId;
+    return this.lang() === 'vi' ? preset.nameVi : preset.nameEn;
+  }
+
+  getStrokeTypeName(type: string): string {
+    const isVi = this.lang() === 'vi';
+    switch (type) {
+      case 'pen': return isVi ? 'Nét vẽ tự do' : 'Freehand Draw';
+      case 'arrow': return isVi ? 'Mũi tên chỉ hướng' : 'Directional Arrow';
+      case 'rect': return isVi ? 'Hình chữ nhật' : 'Rectangle';
+      case 'circle': return isVi ? 'Hình tròn' : 'Circle';
+      case 'line': return isVi ? 'Đường thẳng' : 'Straight Line';
+      default: return type;
+    }
   }
   
   audioTracks = this.backgroundAudio.audioTracks;
@@ -237,25 +314,6 @@ export class App {
     }
   }
   
-  onLogoSelected(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) {
-      this.logoFile.set(file);
-      if (this.logoPreviewUrl()) {
-        URL.revokeObjectURL(this.logoPreviewUrl()!);
-      }
-      this.logoPreviewUrl.set(URL.createObjectURL(file));
-    }
-  }
-
-  removeWatermark() {
-    this.logoFile.set(null);
-    if (this.logoPreviewUrl()) {
-      URL.revokeObjectURL(this.logoPreviewUrl()!);
-      this.logoPreviewUrl.set(null);
-    }
-  }
-
   saveSegmentState() {
     this.videoSegmentsService.saveSegmentState();
   }
@@ -610,6 +668,14 @@ export class App {
     this.canvasDrawer.updateStrokeDuration(id, newDuration, this.videoWidth(), this.videoHeight(), this.currentTime());
   }
 
+  updateStrokeText(id: string, newText: string) {
+    this.canvasDrawer.updateStrokeText(id, newText, this.videoWidth(), this.videoHeight(), this.currentTime());
+  }
+
+  updateStrokeFontSize(id: string, newFontSize: number) {
+    this.canvasDrawer.updateStrokeFontSize(id, newFontSize, this.videoWidth(), this.videoHeight(), this.currentTime());
+  }
+
   // --- Rendering logic ---
 
   async exportVideo() {
@@ -634,8 +700,7 @@ export class App {
       logoPosition: this.logoPosition(),
       logoOpacity: this.logoOpacity(),
       logoSize: this.logoSize(),
-      selectedFilterId: this.selectedFilterId(),
-      filterIntensity: this.filterIntensity(),
+      appliedFilters: this.appliedFilters(),
       canvasElement: this.canvasEl.nativeElement,
       strokes: this.strokes(),
       translations: this.translations(),

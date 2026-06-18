@@ -3,6 +3,7 @@ import { VideoExporter } from './video-exporter';
 import { GifExporter } from './gif-exporter';
 import { Stroke } from './stroke.types';
 import { VideoSegment } from './segments';
+import { AppliedFilter } from './filters.types';
 
 export interface ExportConfig {
   videoUrl: string;
@@ -20,8 +21,7 @@ export interface ExportConfig {
   logoPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   logoOpacity: number;
   logoSize: number;
-  selectedFilterId?: string;
-  filterIntensity?: number;
+  appliedFilters?: AppliedFilter[];
   canvasElement: HTMLCanvasElement;
   strokes: Stroke[];
   translations: {

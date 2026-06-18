@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { Stroke, drawStrokesOnContext } from './stroke.types';
-import { getFilterCSS } from './filters.types';
+import { AppliedFilter, getAppliedFiltersCSSAtTime } from './filters.types';
 import { VideoSegment, getOriginalTime } from './segments';
 
 export interface GifExportConfig {
@@ -14,8 +14,7 @@ export interface GifExportConfig {
   logoPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   logoOpacity: number;
   logoSize: number;
-  selectedFilterId?: string;
-  filterIntensity?: number;
+  appliedFilters?: AppliedFilter[];
   canvasElement: HTMLCanvasElement;
   strokes: Stroke[];
   translations: {
@@ -44,8 +43,7 @@ export class GifExporter {
       logoPosition,
       logoOpacity,
       logoSize,
-      selectedFilterId,
-      filterIntensity,
+      appliedFilters,
       strokes,
       translations,
       onProgress,
@@ -121,9 +119,8 @@ export class GifExporter {
 
         // Clear and draw combined layers
         gifCtx.clearRect(0, 0, gifWidth, gifHeight);
-        if (selectedFilterId && selectedFilterId !== 'none') {
-          gifCtx.filter = getFilterCSS(selectedFilterId, filterIntensity || 100);
-        }
+        const activeFilterStyle = getAppliedFiltersCSSAtTime(appliedFilters || [], targetOriginalTime);
+        gifCtx.filter = activeFilterStyle;
         gifCtx.drawImage(exportVid, 0, 0, gifWidth, gifHeight);
         gifCtx.filter = 'none';
         // Draw drawing annotations dynamically on targetGifCtx based on original time

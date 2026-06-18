@@ -5,7 +5,7 @@ import { Stroke, drawStrokesOnContext } from './stroke.types';
   providedIn: 'root'
 })
 export class CanvasDrawer {
-  currentTool = signal<'pointer' | 'pen' | 'arrow'>('pointer');
+  currentTool = signal<'pointer' | 'pen' | 'arrow' | 'rect' | 'circle' | 'line' | 'text'>('pointer');
   color = signal<string>('#ef4444'); // Tailwind red-500
   strokes = signal<Stroke[]>([]);
   activeStrokeId = signal<string | null>(null);
@@ -68,16 +68,19 @@ export class CanvasDrawer {
     
     // Create new active stroke
     const strokeId = 'stroke_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const tool = this.currentTool();
     this.activeStroke = {
       id: strokeId,
-      type: this.currentTool() as 'pen' | 'arrow',
+      type: tool as 'pen' | 'arrow' | 'rect' | 'circle' | 'line' | 'text',
       points: [pos],
       startPos: pos,
       endPos: pos,
       color: this.color(),
       lineWidth: Math.max(5, videoWidth * 0.005),
       startTime: currentTime,
-      duration: 3.0 // default 3s as requested
+      duration: 3.0, // default 3s as requested
+      text: tool === 'text' ? 'Văn bản / Text' : undefined,
+      fontSize: tool === 'text' ? 24 : undefined
     };
     
     // Auto select this keyframe
@@ -91,7 +94,7 @@ export class CanvasDrawer {
     
     if (this.activeStroke.type === 'pen') {
       this.activeStroke.points.push(pos);
-    } else if (this.activeStroke.type === 'arrow') {
+    } else {
       this.activeStroke.endPos = pos;
     }
     
@@ -146,6 +149,17 @@ export class CanvasDrawer {
   updateStrokeDuration(id: string, newDuration: number, videoWidth: number, videoHeight: number, currentTime: number) {
     const validDur = Math.max(0.1, Number(newDuration));
     this.strokes.update(all => all.map(s => s.id === id ? { ...s, duration: validDur } : s));
+    this.redrawCanvas(videoWidth, videoHeight, currentTime);
+  }
+
+  updateStrokeText(id: string, newText: string, videoWidth: number, videoHeight: number, currentTime: number) {
+    this.strokes.update(all => all.map(s => s.id === id ? { ...s, text: newText } : s));
+    this.redrawCanvas(videoWidth, videoHeight, currentTime);
+  }
+
+  updateStrokeFontSize(id: string, newFontSize: number, videoWidth: number, videoHeight: number, currentTime: number) {
+    const validSize = Math.max(6, Math.min(120, Number(newFontSize)));
+    this.strokes.update(all => all.map(s => s.id === id ? { ...s, fontSize: validSize } : s));
     this.redrawCanvas(videoWidth, videoHeight, currentTime);
   }
 }

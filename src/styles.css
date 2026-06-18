@@ -23,3 +23,81 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+/* Custom range slider styling for cross-browser consistency (Chrome/Firefox/Safari) */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: #262626; /* bg-neutral-800 */
+}
+
+/* Chrome/Safari/Blink styles */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background-color: #ef4444; /* Fallback default red-500 */
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+}
+
+/* Chrome/Safari specific color inheritance */
+input[type="range"].accent-red-500::-webkit-slider-thumb {
+  background-color: #ef4444;
+}
+
+input[type="range"].accent-emerald-500::-webkit-slider-thumb {
+  background-color: #10b981;
+}
+
+/* Firefox styles */
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background-color: #ef4444; /* Fallback default red-500 */
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.25);
+}
+
+input[type="range"]::-moz-range-thumb:active {
+  transform: scale(1.1);
+}
+
+/* Firefox specific color inheritance */
+input[type="range"].accent-red-500::-moz-range-thumb {
+  background-color: #ef4444;
+}
+
+input[type="range"].accent-emerald-500::-moz-range-thumb {
+  background-color: #10b981;
+}
+
+/* Focus styles for accessibility */
+input[type="range"]:focus-visible {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+}
+
+input[type="range"].accent-emerald-500:focus-visible {
+  outline-color: #10b981;
+}
+

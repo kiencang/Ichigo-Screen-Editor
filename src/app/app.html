@@ -1,35 +1,6 @@
 <div class="min-h-screen bg-neutral-900 text-neutral-100 font-sans selection:bg-red-500/30 flex flex-col">
   <!-- Header -->
-  <header class="border-b border-white/10 bg-neutral-950 px-8 py-4 flex items-center justify-between sticky top-0 z-50">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-red-500/20 text-red-500 flex items-center justify-center">
-        <mat-icon class="text-xl">movie_edit</mat-icon>
-      </div>
-      <h1 class="text-xl font-medium tracking-tight">Ichigo Editor</h1>
-    </div>
-
-    <!-- Language Selector Toggle -->
-    <div class="flex items-center gap-1 bg-neutral-900 border border-white/5 p-1 rounded-xl">
-      <button 
-        (click)="setLang('vi')" 
-        class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer"
-        [class.bg-red-500]="lang() === 'vi'"
-        [class.text-white]="lang() === 'vi'"
-        [class.text-neutral-400]="lang() !== 'vi'"
-        [class.hover:text-neutral-100]="lang() !== 'vi'">
-        Tiếng Việt
-      </button>
-      <button 
-        (click)="setLang('en')" 
-        class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer"
-        [class.bg-red-500]="lang() === 'en'"
-        [class.text-white]="lang() === 'en'"
-        [class.text-neutral-400]="lang() !== 'en'"
-        [class.hover:text-neutral-100]="lang() !== 'en'">
-        English
-      </button>
-    </div>
-  </header>
+  <app-header [lang]="lang()" (langChanged)="setLang($event)"></app-header>
 
   <main class="flex-1 max-w-[1440px] w-full mx-auto px-8 py-6"
         [class.grid]="videoFile()"
@@ -57,18 +28,7 @@
     
     <!-- Upload Screen (If no video) -->
     @if (!videoFile()) {
-      <div class="col-span-full h-[60vh] flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-2xl bg-neutral-900/50 hover:bg-neutral-800/50 hover:border-red-500/50 transition-all">
-        <div class="w-16 h-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mb-6">
-          <mat-icon class="text-3xl">upload_file</mat-icon>
-        </div>
-        <h2 class="text-2xl font-medium mb-2 tracking-tight">{{ translations().selectVideo }}</h2>
-        <p class="text-neutral-500 mb-8 max-w-md text-center">{{ translations().processDevice }}</p>
-        <label for="video-upload" class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl cursor-pointer transition-colors flex items-center gap-2 shadow-sm">
-          <mat-icon>folder_open</mat-icon>
-          {{ translations().browseFiles }}
-        </label>
-        <input id="video-upload" type="file" accept="video/*" class="hidden" (change)="onVideoSelected($event)">
-      </div>
+      <app-upload-panel [translations]="translations()" (videoSelected)="onVideoSelected($event)"></app-upload-panel>
     } @else {
       <!-- Video Preview and Annotations -->
       <div class="col-span-1 lg:col-span-9 flex flex-col gap-6">
@@ -382,6 +342,41 @@
               </div>
             }
 
+            <!-- Video Filter Timeline Row -->
+            @if (appliedFilters().length > 0) {
+              <div class="relative h-8 bg-neutral-900/40 border border-white/5 rounded-xl overflow-hidden mt-1 flex items-center">
+                <!-- Watermark label of the channel -->
+                <div class="absolute inset-y-0 left-0 flex items-center z-10 text-[9px] text-red-500 font-mono pl-3 pointer-events-none opacity-40">
+                  <mat-icon style="font-size: 13px; width: 13px; height: 13px; display: flex; align-items: center; justify-content: center;">movie_filter</mat-icon>
+                  <span class="ml-1 uppercase tracking-wider font-bold">{{ lang() === 'vi' ? 'Bộ lọc màu' : 'COLOR FILTERS' }}</span>
+                </div>
+
+                <!-- Applied Filter Capsule segments -->
+                <div class="absolute inset-y-0 left-0 right-0 pointer-events-auto flex items-center">
+                  @for (filter of appliedFilters(); track filter.id) {
+                    <div class="absolute top-1 bottom-1 rounded-lg cursor-pointer border hover:scale-y-105 hover:brightness-110 z-20 transition-all flex items-center px-2.5 shadow-sm text-[10px]"
+                         [style.left.%]="(filter.startTime / videoDuration()) * 100"
+                         [style.width.%]="(filter.duration / videoDuration()) * 100"
+                         [class.bg-red-500/25]="activeFilterId() === filter.id"
+                         [class.border-red-500/40]="activeFilterId() === filter.id"
+                         [class.ring-1]="activeFilterId() === filter.id"
+                         [class.ring-red-400/30]="activeFilterId() === filter.id"
+                         [class.bg-neutral-800/80]="activeFilterId() !== filter.id"
+                         [class.border-white/5]="activeFilterId() !== filter.id"
+                         [class.text-red-400]="activeFilterId() === filter.id"
+                         [class.text-neutral-300]="activeFilterId() !== filter.id"
+                         (mousedown)="$event.stopPropagation(); activeFilterId.set(filter.id); seekTo(filter.startTime)"
+                         (touchstart)="$event.stopPropagation(); activeFilterId.set(filter.id); seekTo(filter.startTime)"
+                         [title]="getFilterPresetName(filter.presetId)">
+                      <span class="truncate font-semibold select-none leading-none">
+                        {{ getFilterPresetName(filter.presetId) }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
             <!-- Ticks Rulers Timestamps Labels below track -->
             <div class="relative h-6 mt-1 pointer-events-none overflow-hidden text-[9px] font-mono text-neutral-500 select-none">
               @for (tick of rulerTicks(); track tick.time) {
@@ -541,6 +536,46 @@
                 [attr.title]="translations().toolArrow">
                 <mat-icon size="sm">moving</mat-icon>
               </button>
+              <button 
+                class="p-2 rounded-lg flex items-center justify-center transition-colors hover:text-white cursor-pointer"
+                [class.bg-red-500]="currentTool() === 'rect'"
+                [class.bg-opacity-20]="currentTool() === 'rect'"
+                [class.text-red-400]="currentTool() === 'rect'"
+                [class.text-neutral-500]="currentTool() !== 'rect'"
+                (click)="currentTool.set('rect')"
+                [attr.title]="translations().toolRect">
+                <mat-icon size="sm">crop_square</mat-icon>
+              </button>
+              <button 
+                class="p-2 rounded-lg flex items-center justify-center transition-colors hover:text-white cursor-pointer"
+                [class.bg-red-500]="currentTool() === 'circle'"
+                [class.bg-opacity-20]="currentTool() === 'circle'"
+                [class.text-red-400]="currentTool() === 'circle'"
+                [class.text-neutral-500]="currentTool() !== 'circle'"
+                (click)="currentTool.set('circle')"
+                [attr.title]="translations().toolCircle">
+                <mat-icon size="sm">radio_button_unchecked</mat-icon>
+              </button>
+              <button 
+                class="p-2 rounded-lg flex items-center justify-center transition-colors hover:text-white cursor-pointer"
+                [class.bg-red-500]="currentTool() === 'line'"
+                [class.bg-opacity-20]="currentTool() === 'line'"
+                [class.text-red-400]="currentTool() === 'line'"
+                [class.text-neutral-500]="currentTool() !== 'line'"
+                (click)="currentTool.set('line')"
+                [attr.title]="translations().toolLine">
+                <mat-icon size="sm">horizontal_rule</mat-icon>
+              </button>
+              <button 
+                class="p-2 rounded-lg flex items-center justify-center transition-colors hover:text-white cursor-pointer"
+                [class.bg-red-500]="currentTool() === 'text'"
+                [class.bg-opacity-20]="currentTool() === 'text'"
+                [class.text-red-400]="currentTool() === 'text'"
+                [class.text-neutral-500]="currentTool() !== 'text'"
+                (click)="currentTool.set('text')"
+                [attr.title]="translations().toolText">
+                <mat-icon size="sm">title</mat-icon>
+              </button>
             </div>
 
             <div class="flex items-center gap-2 ml-auto justify-end">
@@ -549,125 +584,35 @@
         </div>
 
         <!-- Annotation Timeline & properties panel -->
-        @if (strokes().length > 0) {
-          <div class="p-5 rounded-2xl bg-neutral-900 border border-white/5 flex flex-col gap-4">
-            <div class="flex items-center justify-between border-b border-white/10 pb-3">
-              <span class="text-xs font-semibold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
-                <mat-icon class="text-red-400" style="font-size: 16px; width: 16px; height: 16px;">layers</mat-icon>
-                {{ lang() === 'vi' ? 'Danh sách chú thích & Dòng thời gian' : 'Annotation Layers & Timeline' }}
-              </span>
-              <span class="text-[10px] bg-neutral-800 text-neutral-400 font-mono font-medium px-2 py-0.5 rounded-full">
-                {{ strokes().length }} {{ lang() === 'vi' ? 'mục' : 'items' }}
-              </span>
-            </div>
+        <app-strokes-list
+          [strokes]="strokes()"
+          [activeStrokeId]="activeStrokeId()"
+          [videoDuration]="videoDuration()"
+          [lang]="lang()"
+          [currentActiveStroke]="currentActiveStroke()"
+          (activeStrokeIdSet)="activeStrokeId.set($event)"
+          (seekTo)="seekTo($event)"
+          (deleteStroke)="deleteStroke($event)"
+          (updateStrokeStartTime)="updateStrokeStartTime($event.id, $event.value)"
+          (updateStrokeDuration)="updateStrokeDuration($event.id, $event.value)"
+          (updateStrokeText)="updateStrokeText($event.id, $event.value)"
+          (updateStrokeFontSize)="updateStrokeFontSize($event.id, $event.value)">
+        </app-strokes-list>
 
-            <!-- List of annotation layers -->
-            <div class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-              @for (stroke of strokes(); track stroke.id) {
-                <div class="flex items-center justify-between p-3 rounded-xl border transition-all text-xs select-none"
-                     [class.bg-red-500/10]="activeStrokeId() === stroke.id"
-                     [class.border-red-500/30]="activeStrokeId() === stroke.id"
-                     [class.bg-neutral-950/40]="activeStrokeId() !== stroke.id"
-                     [class.border-white/5]="activeStrokeId() !== stroke.id">
-                  
-                  <!-- Info Left side -->
-                  <button type="button" class="flex items-center gap-3 text-left flex-1 cursor-pointer"
-                          (click)="activeStrokeId.set(stroke.id); seekTo(stroke.startTime)">
-                    <!-- Dot showing color of stroke -->
-                    <span class="w-2.5 h-2.5 rounded-full border border-neutral-950/40 shrink-0" [style.background-color]="stroke.color"></span>
-                    
-                    <div class="flex flex-col gap-0.5">
-                      <span class="font-semibold text-neutral-300">
-                        {{ stroke.type === 'pen' ? (lang() === 'vi' ? 'Nét vẽ tự do' : 'Freehand Draw') : (lang() === 'vi' ? 'Mũi tên chỉ hướng' : 'Directional Arrow') }}
-                      </span>
-                      <span class="text-[10px] font-mono text-neutral-500">
-                        {{ lang() === 'vi' ? 'Bắt đầu' : 'Start' }}: {{ formatTimeShort(stroke.startTime) }} | {{ lang() === 'vi' ? 'Thời lượng' : 'Duration' }}: {{ stroke.duration.toFixed(1) }}s
-                      </span>
-                    </div>
-                  </button>
-
-                  <!-- Control actions -->
-                  <div class="flex items-center gap-2 shrink-0">
-                    <button type="button" (click)="deleteStroke(stroke.id)" 
-                            class="p-1 px-2.5 rounded-lg bg-neutral-950/80 border border-white/5 hover:bg-red-500/10 hover:text-red-400 text-neutral-400 hover:border-red-500/20 transition-all cursor-pointer"
-                            title="Xóa chú thích">
-                      <mat-icon style="font-size: 14px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;">delete</mat-icon>
-                    </button>
-                  </div>
-                </div>
-              }
-            </div>
-
-            <!-- Selected annotation fine-tuning controls -->
-            @if (currentActiveStroke(); as activeStrokeItem) {
-                <div class="p-4 rounded-xl bg-neutral-950 border border-white/5 flex flex-col gap-4">
-                  <div class="text-xs font-semibold text-neutral-250 flex items-center justify-between">
-                    <span class="flex items-center gap-1.5 font-medium text-neutral-300">
-                      <mat-icon class="text-red-400" style="font-size: 14px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;">edit</mat-icon>
-                      {{ lang() === 'vi' ? 'Thiết lập chú thích đang chọn' : 'Properties of Selected Annotation' }}
-                    </span>
-                    <span class="text-[9px] bg-red-400/10 text-red-300 px-2.5 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider">
-                      {{ activeStrokeItem.type }}
-                    </span>
-                  </div>
-
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Start time adjustment -->
-                    <div class="flex flex-col gap-1.5">
-                      <div class="text-[10px] font-medium text-neutral-400 flex justify-between">
-                        <span>{{ lang() === 'vi' ? 'Thời điểm xuất hiện' : 'Start Time' }}</span>
-                        <span class="font-mono text-neutral-300">{{ activeStrokeItem.startTime.toFixed(2) }}s / {{ formatTimeShort(videoDuration()) }}</span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <input type="range" 
-                               [ngModel]="activeStrokeItem.startTime" 
-                               (ngModelChange)="updateStrokeStartTime(activeStrokeItem.id, $event)" 
-                               [min]="0" 
-                               [max]="videoDuration()" 
-                               step="0.05"
-                               class="flex-1 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-red-500"
-                               title="Start Time Slider">
-                        <input type="number" 
-                               [ngModel]="activeStrokeItem.startTime | number:'1.1-2'" 
-                               (ngModelChange)="updateStrokeStartTime(activeStrokeItem.id, $event)" 
-                               [min]="0" 
-                               [max]="videoDuration()" 
-                               step="0.1"
-                               class="w-16 px-1.5 py-0.5 bg-neutral-900 border border-white/10 rounded text-neutral-200 text-center font-mono text-[11px]"
-                               title="Start Time Input">
-                      </div>
-                    </div>
-
-                    <!-- Duration Adjustment -->
-                    <div class="flex flex-col gap-1.5">
-                      <div class="text-[10px] font-medium text-neutral-400 flex justify-between">
-                        <span>{{ lang() === 'vi' ? 'Thời lượng hiển thị' : 'Display Duration' }}</span>
-                        <span class="font-mono text-neutral-300">{{ activeStrokeItem.duration.toFixed(1) }}s</span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <input type="range" 
-                               [ngModel]="activeStrokeItem.duration" 
-                               (ngModelChange)="updateStrokeDuration(activeStrokeItem.id, $event)" 
-                               [min]="0.5" 
-                               [max]="10" 
-                               step="0.1"
-                               class="flex-1 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-red-500"
-                               title="Display Duration Slider">
-                        <input type="number" 
-                               [ngModel]="activeStrokeItem.duration" 
-                               (ngModelChange)="updateStrokeDuration(activeStrokeItem.id, $event)" 
-                               [min]="0.1" 
-                               [max]="60" 
-                               step="0.5"
-                               class="w-16 px-1.5 py-0.5 bg-neutral-900 border border-white/10 rounded text-neutral-200 text-center font-mono text-[11px]"
-                               title="Duration Input">
-                      </div>
-                    </div>
-                  </div>
-                </div>
-            }
-          </div>
-        }
+        <!-- Video Filter Timeline & properties panel -->
+        <app-applied-filters-list
+          [appliedFilters]="appliedFilters()"
+          [activeFilterId]="activeFilterId()"
+          [videoDuration]="videoDuration()"
+          [lang]="lang()"
+          [translations]="translations()"
+          (activeFilterIdSet)="activeFilterId.set($event)"
+          (seekTo)="seekTo($event)"
+          (deleteAppliedFilter)="deleteAppliedFilter($event)"
+          (updateFilterStartTime)="updateFilterStartTime($event.id, $event.value)"
+          (updateFilterDuration)="updateFilterDuration($event.id, $event.value)"
+          (updateFilterIntensity)="updateFilterIntensity($event.id, $event.value)">
+        </app-applied-filters-list>
       </div>
 
       <!-- Settings Sidebar -->
@@ -680,102 +625,20 @@
           </h3>
 
           <!-- Extra Assets -->
-          <div class="flex flex-col gap-3">
-              <div class="flex items-center gap-2">
-                <label for="logo-upload" class="flex-1 flex items-center gap-3 p-3 rounded-xl border border-white/5 hover:border-white/20 bg-neutral-950/50 cursor-pointer transition-colors group">
-                   <mat-icon class="text-neutral-500 group-hover:text-red-400 transition-colors">image</mat-icon>
-                   <div class="flex-1 overflow-hidden">
-                      <div class="text-sm font-medium truncate">{{ logoFile() ? logoFile()!.name : translations().addWatermark }}</div>
-                   </div>
-                </label>
-                @if (logoFile()) {
-                  <button (click)="removeWatermark()" class="p-3 bg-neutral-950/50 hover:bg-red-500/10 hover:text-red-400 text-neutral-500 rounded-xl border border-white/5 hover:border-red-500/20 transition-colors cursor-pointer" title="{{ translations().removeWatermark }}">
-                    <mat-icon class="text-base !flex !items-center !justify-center" style="font-size: 16px; width: 16px; height: 16px;">delete</mat-icon>
-                  </button>
-                }
-              </div>
-              <input id="logo-upload" type="file" accept="image/*" class="hidden" (change)="onLogoSelected($event)">
-
-              @if (logoFile()) {
-                <div class="p-3.5 rounded-xl bg-neutral-950/45 border border-white/5 flex flex-col gap-3">
-                   <div class="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
-                     {{ translations().logoSettings }}
-                   </div>
-                   
-                   <div class="flex items-center gap-4">
-                      <!-- Position choice 2x2 dots grid -->
-                      <div class="flex flex-col gap-1 items-center">
-                         <div class="text-[9px] text-neutral-500 font-mono">{{ translations().logoPosition }}</div>
-                         <div class="grid grid-cols-2 gap-1 w-[72px] h-[52px] bg-neutral-955 p-1 rounded-lg border border-white/5">
-                            <button (click)="logoPosition.set('top-left')" 
-                                    class="rounded transition-all duration-200 border cursor-pointer flex items-center justify-center p-0.5"
-                                    [class.bg-red-500/20]="logoPosition() === 'top-left'"
-                                    [class.border-red-500/40]="logoPosition() === 'top-left'"
-                                    [class.bg-neutral-900]="logoPosition() !== 'top-left'"
-                                    [class.border-white/5]="logoPosition() !== 'top-left'"
-                                    title="{{ translations().logoTopLeft }}">
-                              <div class="w-1.5 h-1.5 rounded-full" [class.bg-red-400]="logoPosition() === 'top-left'" [class.bg-neutral-700]="logoPosition() !== 'top-left'"></div>
-                            </button>
-                            <button (click)="logoPosition.set('top-right')" 
-                                    class="rounded transition-all duration-200 border cursor-pointer flex items-center justify-center p-0.5"
-                                    [class.bg-red-500/20]="logoPosition() === 'top-right'"
-                                    [class.border-red-500/40]="logoPosition() === 'top-right'"
-                                    [class.bg-neutral-900]="logoPosition() !== 'top-right'"
-                                    [class.border-white/5]="logoPosition() !== 'top-right'"
-                                    title="{{ translations().logoTopRight }}">
-                              <div class="w-1.5 h-1.5 rounded-full" [class.bg-red-400]="logoPosition() === 'top-right'" [class.bg-neutral-700]="logoPosition() !== 'top-right'"></div>
-                            </button>
-                            <button (click)="logoPosition.set('bottom-left')" 
-                                    class="rounded transition-all duration-200 border cursor-pointer flex items-center justify-center p-0.5"
-                                    [class.bg-red-500/20]="logoPosition() === 'bottom-left'"
-                                    [class.border-red-500/40]="logoPosition() === 'bottom-left'"
-                                    [class.bg-neutral-900]="logoPosition() !== 'bottom-left'"
-                                    [class.border-white/5]="logoPosition() !== 'bottom-left'"
-                                    title="{{ translations().logoBottomLeft }}">
-                              <div class="w-1.5 h-1.5 rounded-full" [class.bg-red-400]="logoPosition() === 'bottom-left'" [class.bg-neutral-700]="logoPosition() !== 'bottom-left'"></div>
-                            </button>
-                            <button (click)="logoPosition.set('bottom-right')" 
-                                    class="rounded transition-all duration-200 border cursor-pointer flex items-center justify-center p-0.5"
-                                    [class.bg-red-500/20]="logoPosition() === 'bottom-right'"
-                                    [class.border-red-500/40]="logoPosition() === 'bottom-right'"
-                                    [class.bg-neutral-900]="logoPosition() !== 'bottom-right'"
-                                    [class.border-white/5]="logoPosition() !== 'bottom-right'"
-                                    title="{{ translations().logoBottomRight }}">
-                              <div class="w-1.5 h-1.5 rounded-full" [class.bg-red-400]="logoPosition() === 'bottom-right'" [class.bg-neutral-700]="logoPosition() !== 'bottom-right'"></div>
-                            </button>
-                         </div>
-                      </div>
-                      
-                      <!-- Sizing and transparency range controls -->
-                      <div class="flex-1 flex flex-col gap-4">
-                         <div class="flex flex-col gap-1.5">
-                            <div class="flex justify-between text-[10px] text-neutral-400">
-                               <span>{{ translations().logoOpacity }}</span>
-                               <span class="font-mono text-neutral-500">{{ logoOpacity() }}%</span>
-                            </div>
-                            <input type="range" [ngModel]="logoOpacity()" (ngModelChange)="logoOpacity.set($event)" min="10" max="100"
-                                   class="w-full h-1 bg-neutral-800 rounded appearance-none cursor-pointer accent-red-500">
-                         </div>
-                         <div class="flex flex-col gap-1.5">
-                            <div class="flex justify-between text-[10px] text-neutral-400">
-                               <span>{{ translations().logoSize }}</span>
-                               <span class="font-mono text-neutral-500">{{ logoSize() }}%</span>
-                            </div>
-                            <input type="range" [ngModel]="logoSize()" (ngModelChange)="logoSize.set($event)" min="5" max="35"
-                                   class="w-full h-1 bg-neutral-800 rounded appearance-none cursor-pointer accent-red-500">
-                         </div>
-                      </div>
-                   </div>
-                </div>
-              }
-          </div>
+          <app-watermark-panel
+            [translations]="translations()"
+            [(logoFile)]="logoFile"
+            [(logoPreviewUrl)]="logoPreviewUrl"
+            [(logoPosition)]="logoPosition"
+            [(logoOpacity)]="logoOpacity"
+            [(logoSize)]="logoSize"
+          />
 
           <!-- Video Filters Section -->
           <app-video-filters
             [lang]="lang()"
             [translations]="translations()"
-            [(selectedFilterId)]="selectedFilterId"
-            [(filterIntensity)]="filterIntensity" />
+            (filterSelected)="addAppliedFilter($event)" />
 
         </div>
 
@@ -804,20 +667,5 @@
   </main>
 
   <!-- Footer -->
-  <footer class="mt-auto border-t border-white/5 py-4 px-8 bg-neutral-950/40">
-    <div class="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-neutral-500">
-      <div class="flex items-center gap-1.5">
-        <span class="font-medium text-neutral-300">Ichigo Editor</span>
-        <span class="text-neutral-700">•</span>
-        <span>v1.0.8</span>
-      </div>
-      <div class="flex flex-wrap justify-center items-center gap-1.5 font-sans">
-        <a href="https://github.com/kiencang/Ichigo-Editor" target="_blank" rel="noopener noreferrer" class="hover:text-neutral-300 transition-colors cursor-pointer">GitHub</a>
-        <span class="text-neutral-700">•</span>
-        <span class="text-neutral-400">Nguyễn Đức Anh</span>
-        <span class="text-neutral-700">•</span>
-        <a href="mailto:contact@wpsila.com" class="hover:text-neutral-300 transition-colors cursor-pointer">contact@wpsila.com</a>
-      </div>
-    </div>
-  </footer>
+  <app-footer></app-footer>
 </div>

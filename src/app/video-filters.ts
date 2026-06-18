@@ -1,47 +1,51 @@
-import { Component, model, input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, ChangeDetectionStrategy, signal } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { VIDEO_FILTERS } from './filters.types';
 import { AppTranslations } from './translations';
 
 @Component({
   selector: 'app-video-filters',
+  imports: [MatIconModule],
   template: `
     <!-- Video Filters Section -->
     <div class="flex flex-col gap-3">
-      <span class="text-sm font-medium text-neutral-400">
-        {{ translations().videoFilters }}
-      </span>
+      <!-- Accordion Header -->
+      <button (click)="toggleExpand()"
+              type="button"
+              class="flex items-center justify-between w-full cursor-pointer text-left focus:outline-none group p-3 rounded-xl border border-white/5 hover:border-white/10 bg-neutral-950/50 transition-colors">
+        <div class="flex items-center gap-3">
+          <mat-icon class="text-neutral-500 group-hover:text-red-400 transition-colors" style="font-size: 18px; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;">movie_filter</mat-icon>
+          <span class="text-sm font-medium text-neutral-300">
+            {{ translations().videoFilters }}
+          </span>
+        </div>
+        <mat-icon class="text-neutral-500 group-hover:text-neutral-300 transition-colors" style="font-size: 20px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;">
+          {{ isExpanded() ? 'expand_less' : 'expand_more' }}
+        </mat-icon>
+      </button>
       
-      <div class="grid grid-cols-2 gap-2">
-        @for (f of videoFiltersList; track f.id) {
-          <button (click)="onSelectFilter(f.id)"
-                  class="p-2 py-2.5 rounded-xl border cursor-pointer text-center transition-all flex flex-col items-center justify-center gap-1 group"
-                  [class.bg-red-500/10]="selectedFilterId() === f.id"
-                  [class.border-red-500/30]="selectedFilterId() === f.id"
-                  [class.text-red-400]="selectedFilterId() === f.id"
-                  [class.font-medium]="selectedFilterId() === f.id"
-                  [class.bg-neutral-950/40]="selectedFilterId() !== f.id"
-                  [class.border-white/5]="selectedFilterId() !== f.id"
-                  [class.text-neutral-400]="selectedFilterId() !== f.id"
-                  style="min-height: 48px;">
-            <span class="text-[11px] leading-tight select-none truncate max-w-full">
-              {{ lang() === 'vi' ? f.nameVi : f.nameEn }}
-            </span>
-          </button>
-        }
-      </div>
-
-      @if (selectedFilterId() !== 'none') {
-        <div class="p-3 rounded-xl bg-neutral-950/45 border border-white/5 flex flex-col gap-1.5">
-          <div class="flex justify-between text-[10px] text-neutral-400">
-            <span>{{ translations().filterIntensity }}</span>
-            <span class="font-mono text-neutral-500">{{ filterIntensity() }}%</span>
+      <!-- Collapsible region -->
+      @if (isExpanded()) {
+        <div class="p-3.5 rounded-xl bg-neutral-950/45 border border-white/5 flex flex-col gap-3 animate-fade-in">
+          <p class="text-[10px] text-neutral-500 leading-normal">
+            {{ lang() === 'vi' 
+              ? 'Nhấp vào một hiệu ứng dưới đây để áp dụng vào thời điểm hiện tại của video trên dòng thời gian.' 
+              : "Click on a preset below to apply the filter at the video's current playback time." 
+            }}
+          </p>
+          <div class="grid grid-cols-2 gap-2">
+            @for (f of videoFiltersList; track f.id) {
+              @if (f.id !== 'none') {
+                <button (click)="onSelectFilter(f.id)"
+                        class="p-2.5 rounded-xl border border-white/5 cursor-pointer text-center bg-neutral-900 text-neutral-300 transition-all hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 flex flex-col items-center justify-center gap-1 group"
+                        style="min-height: 48px;">
+                  <span class="text-[11px] font-medium leading-tight select-none truncate max-w-full">
+                    {{ lang() === 'vi' ? f.nameVi : f.nameEn }}
+                  </span>
+                </button>
+              }
+            }
           </div>
-          <input type="range" 
-                 [value]="filterIntensity()" 
-                 (input)="onIntensityChange($event)" 
-                 min="10" 
-                 max="100"
-                 class="w-full h-1 bg-neutral-800 rounded appearance-none cursor-pointer accent-red-500">
         </div>
       }
     </div>
@@ -51,19 +55,18 @@ import { AppTranslations } from './translations';
 export class VideoFilters {
   lang = input<'vi' | 'en'>('vi');
   translations = input.required<AppTranslations>();
-  selectedFilterId = model<string>('none');
-  filterIntensity = model<number>(100);
+  filterSelected = output<string>();
 
   videoFiltersList = VIDEO_FILTERS;
+  isExpanded = signal(false);
+
+  toggleExpand() {
+    this.isExpanded.update(val => !val);
+  }
 
   onSelectFilter(id: string) {
-    this.selectedFilterId.set(id);
-  }
-
-  onIntensityChange(event: Event) {
-    const inputElement = event.target as HTMLInputElement;
-    if (inputElement) {
-      this.filterIntensity.set(Number(inputElement.value));
-    }
+    this.filterSelected.emit(id);
   }
 }
+
+

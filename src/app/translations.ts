@@ -9,6 +9,10 @@ export interface AppTranslations {
   toolPointer: string;
   toolPen: string;
   toolArrow: string;
+  toolRect: string;
+  toolCircle: string;
+  toolLine: string;
+  toolText: string;
   clear: string;
   editorSettings: string;
   videoFilters: string;
@@ -71,6 +75,10 @@ export function getTranslations(lang: 'vi' | 'en'): AppTranslations {
     toolPointer: isVi ? 'Tương tác với video (Phát/Tạm dừng)' : 'Interact with video (Play/Pause)',
     toolPen: isVi ? 'Vẽ tay' : 'Freehand Draw',
     toolArrow: isVi ? 'Công cụ Mũi tên' : 'Arrow Tool',
+    toolRect: isVi ? 'Hình chữ nhật' : 'Rectangle Tool',
+    toolCircle: isVi ? 'Hình tròn' : 'Circle Tool',
+    toolLine: isVi ? 'Đường thẳng' : 'Straight Line Tool',
+    toolText: isVi ? 'Văn bản (Chữ)' : 'Text Tool',
     clear: isVi ? 'Xóa nét vẽ' : 'Clear',
     editorSettings: isVi ? 'Tùy chỉnh' : 'Customization',
     videoFilters: isVi ? 'Bộ lọc màu video' : 'Video Filter Presets',

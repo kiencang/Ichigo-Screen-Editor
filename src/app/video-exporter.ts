@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Stroke, drawStrokesOnContext } from './stroke.types';
-import { getFilterCSS } from './filters.types';
+import { AppliedFilter, getAppliedFiltersCSSAtTime } from './filters.types';
 import { VideoSegment } from './segments';
 
 export interface VideoExportConfig {
@@ -19,8 +19,7 @@ export interface VideoExportConfig {
   logoPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   logoOpacity: number;
   logoSize: number;
-  selectedFilterId?: string;
-  filterIntensity?: number;
+  appliedFilters?: AppliedFilter[];
   canvasElement: HTMLCanvasElement;
   strokes: Stroke[];
   translations: {
@@ -58,8 +57,7 @@ export class VideoExporter {
       logoPosition,
       logoOpacity,
       logoSize,
-      selectedFilterId,
-      filterIntensity,
+      appliedFilters,
       strokes,
       translations,
       onProgress,
@@ -334,9 +332,8 @@ export class VideoExporter {
 
         // Draw video frame
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (selectedFilterId && selectedFilterId !== 'none') {
-          ctx.filter = getFilterCSS(selectedFilterId, filterIntensity || 100);
-        }
+        const activeFilterStyle = getAppliedFiltersCSSAtTime(appliedFilters || [], exportVid.currentTime);
+        ctx.filter = activeFilterStyle;
         ctx.drawImage(exportVid, 0, 0, canvas.width, canvas.height);
         ctx.filter = 'none';
 

@@ -5,6 +5,22 @@ export interface FilterPreset {
   filterString: (intensity: number) => string;
 }
 
+export interface AppliedFilter {
+  id: string;
+  presetId: string;
+  startTime: number;
+  duration: number; // Duration of appearance in seconds (max 3s)
+  intensity: number;
+}
+
+export function getAppliedFiltersCSSAtTime(appliedFilters: AppliedFilter[], time: number): string {
+  if (!appliedFilters || appliedFilters.length === 0) return 'none';
+  const active = appliedFilters.filter(f => time >= f.startTime && time <= (f.startTime + f.duration));
+  if (active.length === 0) return 'none';
+  // Chaining CSS filters is standard: e.g. grayscale(0.5) blur(2px)
+  return active.map(f => getFilterCSS(f.presetId, f.intensity)).join(' ');
+}
+
 export const VIDEO_FILTERS: FilterPreset[] = [
   {
     id: 'none',

@@ -2,5 +2,7 @@
   "name": "Ichigo Editor",
   "description": "Công cụ chỉnh sửa video đơn giản, không cần cài đặt, không cần đăng nhập, sử dụng ngay qua trình duyệt của bạn.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
