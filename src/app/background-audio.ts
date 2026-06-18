@@ -44,11 +44,13 @@ export class BackgroundAudio {
         });
         
         let waveform: number[] = [];
+        const bars = Math.max(30, Math.floor((duration / 60) * 100));
+        const numSamples = Math.min(200, bars);
         try {
-          const bars = Math.max(30, Math.floor((duration / 60) * 100));
-          waveform = await this.waveformProcessor.extractWaveform(file, Math.min(200, bars));
+          waveform = await this.waveformProcessor.extractWaveform(file, numSamples);
         } catch(e) {
-          console.warn('Could not extract waveform', e);
+          console.warn('Could not extract waveform, using flat baseline:', e);
+          waveform = Array(numSamples).fill(0.12);
         }
         
         newTracks.push({

@@ -80,19 +80,4 @@ export class WaveformProcessor {
       reader.readAsArrayBuffer(file);
     });
   }
-
-  generatePlaceholder(numSamples = 120, isBg = false): number[] {
-    const amps: number[] = [];
-    const multiplier = isBg ? 0.18 : 0.12;
-    const shift = isBg ? 0.5 : 0;
-    
-    for (let i = 0; i < numSamples; i++) {
-      const baseVal = isBg 
-        ? 0.25 + 0.35 * Math.sin(i * multiplier + shift) * Math.cos(i * 0.08) + 0.15 * Math.sin(i * 0.45)
-        : 0.2 + 0.45 * Math.sin(i * multiplier) * Math.cos(i * 0.06) + 0.2 * Math.sin(i * 0.35) + 0.15 * Math.cos(i * 0.7);
-      
-      amps.push(Math.min(0.95, Math.max(0.12, Math.abs(baseVal))));
-    }
-    return amps;
-  }
 }

@@ -9,6 +9,7 @@ import { CanvasDrawer } from './canvas-drawer';
 import { ExportProcessor } from './export-processor';
 import { VIDEO_FILTERS, AppliedFilter, getAppliedFiltersCSSAtTime } from './filters.types';
 import { BackgroundAudio } from './background-audio';
+import { BackgroundAudioPanel } from './background-audio-panel';
 import { VideoSegments } from './video-segments';
 import { VideoFilters } from './video-filters';
 import { ExportPanel } from './export-panel';
@@ -23,7 +24,7 @@ import { AppAppliedFiltersList } from './applied-filters-list';
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
-  imports: [FormsModule, MatIconModule, DecimalPipe, VideoFilters, ExportPanel, WatermarkPanel, StrokePropertiesPanel, AppHeader, AppFooter, UploadPanel, AppStrokesList, AppAppliedFiltersList],
+  imports: [FormsModule, MatIconModule, DecimalPipe, VideoFilters, ExportPanel, WatermarkPanel, StrokePropertiesPanel, AppHeader, AppFooter, UploadPanel, AppStrokesList, AppAppliedFiltersList, BackgroundAudioPanel],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -209,36 +210,14 @@ export class App {
   private ctx: CanvasRenderingContext2D | null = null;
   private savedImageData: ImageData | null = null;
 
-  draggedTrackIndex: number | null = null;
-  dragOverTrackIndex: number | null = null;
-
-  onDragStart(index: number) {
-    this.draggedTrackIndex = index;
-  }
-
-  onDragOver(event: DragEvent, index: number) {
-    event.preventDefault();
-    this.dragOverTrackIndex = index;
-  }
-
-  onDrop(event: DragEvent, index: number) {
-    event.preventDefault();
-    if (this.draggedTrackIndex !== null && this.draggedTrackIndex !== index) {
-      this.audioTracks.update(tracks => {
-        const newTracks = [...tracks];
-        const [movedTrack] = newTracks.splice(this.draggedTrackIndex!, 1);
-        newTracks.splice(index, 0, movedTrack);
-        return newTracks;
-      });
-      this.syncBackgroundAudio();
-    }
-    this.draggedTrackIndex = null;
-    this.dragOverTrackIndex = null;
-  }
-
-  onDragEnd() {
-    this.draggedTrackIndex = null;
-    this.dragOverTrackIndex = null;
+  reorderAudioTracks(event: { draggedIndex: number; targetIndex: number }) {
+    this.audioTracks.update(tracks => {
+      const newTracks = [...tracks];
+      const [movedTrack] = newTracks.splice(event.draggedIndex, 1);
+      newTracks.splice(event.targetIndex, 0, movedTrack);
+      return newTracks;
+    });
+    this.syncBackgroundAudio();
   }
 
   constructor() {
@@ -458,6 +437,7 @@ export class App {
           video.currentTime = lastSeg.end;
           this.currentTime.set(lastSeg.end);
           this.selectedSegmentId.set(lastSeg.id);
+          this.syncBackgroundAudio();
           return;
         }
       }
@@ -479,6 +459,7 @@ export class App {
           video.currentTime = currentSeg.end;
           this.currentTime.set(currentSeg.end);
           this.selectedSegmentId.set(currentSeg.id);
+          this.syncBackgroundAudio();
           return;
         }
       }
@@ -772,14 +753,11 @@ export class App {
         this.isExtractingWaveform.set(false);
       })
       .catch((err) => {
-        console.warn('Waveform extraction failed, falling back:', err);
-        this.generatePlaceholderWaveform();
+        console.warn('Waveform extraction failed:', err);
+        // Set a flat baseline of silent bars if extraction fails (no fake simulation)
+        this.waveform.set(Array(120).fill(0.12));
+        this.isExtractingWaveform.set(false);
       });
-  }
-
-  generatePlaceholderWaveform() {
-    this.waveform.set(this.waveformProcessor.generatePlaceholder(120, false));
-    this.isExtractingWaveform.set(false);
   }
 
   isBarSelected(index: number): boolean {

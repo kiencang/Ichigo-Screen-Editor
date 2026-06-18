@@ -9,7 +9,7 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
         <div class="flex items-center gap-1.5">
           <span class="font-medium text-neutral-300">Ichigo Editor</span>
           <span class="text-neutral-700">•</span>
-          <span>v1.0.9</span>
+          <span>v1.0.10</span>
         </div>
         <div class="flex flex-wrap justify-center items-center gap-1.5 font-sans">
           <a href="https://github.com/kiencang/Ichigo-Editor" target="_blank" rel="noopener noreferrer" class="hover:text-neutral-300 transition-colors cursor-pointer">GitHub</a>
