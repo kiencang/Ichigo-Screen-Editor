@@ -1,35 +1,66 @@
-import {ChangeDetectionStrategy, Component, signal, computed, ViewChild, ElementRef, afterNextRender, inject} from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
-import { DecimalPipe } from '@angular/common';
-import { getTranslations } from './translations';
-import { TimeFormatter } from './time-formatter';
-import { WaveformProcessor } from './waveform-processor';
-import { CanvasDrawer } from './canvas-drawer';
-import { ExportProcessor } from './export-processor';
-import { VIDEO_FILTERS, AppliedFilter, getAppliedFiltersCSSAtTime } from './filters.types';
-import { VideoSegment } from './segments';
-import { ZoomRegion, getZoomAtTime } from './zoom.types';
-import { BackgroundAudio } from './background-audio';
-import { BackgroundAudioPanel } from './background-audio-panel';
-import { VideoSegments } from './video-segments';
-import { VideoFilters } from './video-filters';
-import { ExportPanel } from './export-panel';
-import { WatermarkPanel } from './watermark-panel';
-import { StrokePropertiesPanel } from './stroke-properties-panel';
-import { AppHeader } from './header';
-import { AppFooter } from './footer';
-import { UploadPanel } from './upload-panel';
-import { AppStrokesList } from './strokes-list';
-import { AppAppliedFiltersList } from './applied-filters-list';
-import { AppZoomRegionsList } from './zoom-regions-list';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  signal,
+  computed,
+  ViewChild,
+  ElementRef,
+  afterNextRender,
+  inject,
+} from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatIconModule } from "@angular/material/icon";
+import { DecimalPipe } from "@angular/common";
+import { getTranslations } from "./translations";
+import { TimeFormatter } from "./time-formatter";
+import { WaveformProcessor } from "./waveform-processor";
+import { CanvasDrawer } from "./canvas-drawer";
+import { ExportProcessor } from "./export-processor";
+import {
+  VIDEO_FILTERS,
+  AppliedFilter,
+  getAppliedFiltersCSSAtTime,
+} from "./filters.types";
+import { VideoSegment } from "./segments";
+import { ZoomRegion, getZoomAtTime } from "./zoom.types";
+import { BackgroundAudio } from "./background-audio";
+import { BackgroundAudioPanel } from "./background-audio-panel";
+import { VideoSegments } from "./video-segments";
+import { VideoFilters } from "./video-filters";
+import { ExportPanel } from "./export-panel";
+import { WatermarkPanel } from "./watermark-panel";
+import { StrokePropertiesPanel } from "./stroke-properties-panel";
+import { AppHeader } from "./header";
+import { AppFooter } from "./footer";
+import { UploadPanel } from "./upload-panel";
+import { AppStrokesList } from "./strokes-list";
+import { AppAppliedFiltersList } from "./applied-filters-list";
+import { AppZoomRegionsList } from "./zoom-regions-list";
+import { IntroPanelComponent } from "./intro-panel";
+import { IntroSettings, DEFAULT_INTRO_SETTINGS } from "./intro.types";
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  selector: 'app-root',
-  imports: [FormsModule, MatIconModule, DecimalPipe, VideoFilters, ExportPanel, WatermarkPanel, StrokePropertiesPanel, AppHeader, AppFooter, UploadPanel, AppStrokesList, AppAppliedFiltersList, AppZoomRegionsList, BackgroundAudioPanel],
-  templateUrl: './app.html',
-  styleUrl: './app.css',
+  selector: "app-root",
+  imports: [
+    FormsModule,
+    MatIconModule,
+    DecimalPipe,
+    VideoFilters,
+    ExportPanel,
+    WatermarkPanel,
+    StrokePropertiesPanel,
+    AppHeader,
+    AppFooter,
+    UploadPanel,
+    AppStrokesList,
+    AppAppliedFiltersList,
+    AppZoomRegionsList,
+    BackgroundAudioPanel,
+    IntroPanelComponent,
+  ],
+  templateUrl: "./app.html",
+  styleUrl: "./app.css",
 })
 export class App {
   private waveformProcessor = inject(WaveformProcessor);
@@ -38,9 +69,12 @@ export class App {
   readonly backgroundAudio = inject(BackgroundAudio);
   readonly videoSegmentsService = inject(VideoSegments);
 
-  lang = signal<'vi' | 'en'>('vi');
+  introSettings = signal<IntroSettings>(DEFAULT_INTRO_SETTINGS);
+  introPreviewTimestamp = signal<number | null>(null);
 
-  setLang(l: 'vi' | 'en') {
+  lang = signal<"vi" | "en">("vi");
+
+  setLang(l: "vi" | "en") {
     this.lang.set(l);
   }
 
@@ -54,13 +88,13 @@ export class App {
   progress = signal(0);
   logs = signal<string[]>([]);
   errorMessage = signal<string | null>(null);
-  
+
   videoFile = signal<File | null>(null);
   videoUrl = signal<string | null>(null);
   videoDuration = this.videoSegmentsService.videoDuration;
   videoWidth = signal(0);
   videoHeight = signal(0);
-  
+
   videoSegments = this.videoSegmentsService.videoSegments;
   selectedSegmentId = this.videoSegmentsService.selectedSegmentId;
   segmentHistoryList = this.videoSegmentsService.segmentHistoryList;
@@ -74,20 +108,25 @@ export class App {
   canUndo = this.videoSegmentsService.canUndo;
   isGifDisabled = this.videoSegmentsService.isGifDisabled;
   volume = signal<number>(100);
-  outputFormat = signal<string>('webm');
+  outputFormat = signal<string>("webm");
   audioBitrate = signal<number>(192000);
   videoBitrate = signal<number>(0); // 0 = Auto, other values are explicit bps: 2000000, 4000000, 8000000
-  
+
   videoFiltersList = VIDEO_FILTERS;
   appliedFilters = signal<AppliedFilter[]>([]);
   activeFilterId = signal<string | null>(null);
 
   currentActiveFilter = computed(() => {
-    return this.appliedFilters().find(f => f.id === this.activeFilterId()) || null;
+    return (
+      this.appliedFilters().find((f) => f.id === this.activeFilterId()) || null
+    );
   });
 
   getVideoFilterStyle() {
-    return getAppliedFiltersCSSAtTime(this.appliedFilters(), this.currentTime());
+    return getAppliedFiltersCSSAtTime(
+      this.appliedFilters(),
+      this.currentTime(),
+    );
   }
 
   addAppliedFilter(presetId: string) {
@@ -99,60 +138,78 @@ export class App {
     if (dur <= 0) return;
 
     const newFilter: AppliedFilter = {
-      id: 'filter_' + Math.random().toString(36).substring(2, 11),
+      id: "filter_" + Math.random().toString(36).substring(2, 11),
       presetId: presetId,
       startTime: current,
       duration: dur,
-      intensity: 100
+      intensity: 100,
     };
 
-    this.appliedFilters.update(filters => [...filters, newFilter]);
+    this.appliedFilters.update((filters) => [...filters, newFilter]);
     this.activeFilterId.set(newFilter.id);
-    this.logs.update(l => [
+    this.logs.update((l) => [
       ...l,
-      this.lang() === 'vi' 
-        ? `[Bộ lọc] Đã thêm bộ lọc ${presetId} tại ${current.toFixed(2)}s hiển thị trong ${dur.toFixed(1)}s` 
-        : `[Filter] Added ${presetId} filter at ${current.toFixed(2)}s for ${dur.toFixed(1)}s`
+      this.lang() === "vi"
+        ? `[Bộ lọc] Đã thêm bộ lọc ${presetId} tại ${current.toFixed(2)}s hiển thị trong ${dur.toFixed(1)}s`
+        : `[Filter] Added ${presetId} filter at ${current.toFixed(2)}s for ${dur.toFixed(1)}s`,
     ]);
   }
 
   deleteAppliedFilter(id: string) {
-    this.appliedFilters.update(all => all.filter(f => f.id !== id));
+    this.appliedFilters.update((all) => all.filter((f) => f.id !== id));
     if (this.activeFilterId() === id) {
       this.activeFilterId.set(null);
     }
   }
 
   updateFilterStartTime(id: string, newTime: number) {
-    const validTime = Math.max(0, Math.min(this.videoDuration(), Number(newTime)));
-    this.appliedFilters.update(all => all.map(f => f.id === id ? { ...f, startTime: validTime } : f));
+    const validTime = Math.max(
+      0,
+      Math.min(this.videoDuration(), Number(newTime)),
+    );
+    this.appliedFilters.update((all) =>
+      all.map((f) => (f.id === id ? { ...f, startTime: validTime } : f)),
+    );
   }
 
   updateFilterDuration(id: string, newDuration: number) {
-    const validDur = Math.max(0.1, Math.min(this.videoDuration(), Number(newDuration)));
-    this.appliedFilters.update(all => all.map(f => f.id === id ? { ...f, duration: validDur } : f));
+    const validDur = Math.max(
+      0.1,
+      Math.min(this.videoDuration(), Number(newDuration)),
+    );
+    this.appliedFilters.update((all) =>
+      all.map((f) => (f.id === id ? { ...f, duration: validDur } : f)),
+    );
   }
 
   updateFilterIntensity(id: string, intensity: number) {
     const validIntensity = Math.max(10, Math.min(100, Number(intensity)));
-    this.appliedFilters.update(all => all.map(f => f.id === id ? { ...f, intensity: validIntensity } : f));
+    this.appliedFilters.update((all) =>
+      all.map((f) => (f.id === id ? { ...f, intensity: validIntensity } : f)),
+    );
   }
 
   getFilterPresetName(presetId: string): string {
-    const preset = this.videoFiltersList.find(f => f.id === presetId);
+    const preset = this.videoFiltersList.find((f) => f.id === presetId);
     if (!preset) return presetId;
-    return this.lang() === 'vi' ? preset.nameVi : preset.nameEn;
+    return this.lang() === "vi" ? preset.nameVi : preset.nameEn;
   }
 
   getStrokeTypeName(type: string): string {
-    const isVi = this.lang() === 'vi';
+    const isVi = this.lang() === "vi";
     switch (type) {
-      case 'pen': return isVi ? 'Nét vẽ tự do' : 'Freehand Draw';
-      case 'arrow': return isVi ? 'Mũi tên chỉ hướng' : 'Directional Arrow';
-      case 'rect': return isVi ? 'Hình chữ nhật' : 'Rectangle';
-      case 'circle': return isVi ? 'Hình tròn' : 'Circle';
-      case 'line': return isVi ? 'Đường thẳng' : 'Straight Line';
-      default: return type;
+      case "pen":
+        return isVi ? "Nét vẽ tự do" : "Freehand Draw";
+      case "arrow":
+        return isVi ? "Mũi tên chỉ hướng" : "Directional Arrow";
+      case "rect":
+        return isVi ? "Hình chữ nhật" : "Rectangle";
+      case "circle":
+        return isVi ? "Hình tròn" : "Circle";
+      case "line":
+        return isVi ? "Đường thẳng" : "Straight Line";
+      default:
+        return type;
     }
   }
 
@@ -160,7 +217,7 @@ export class App {
   activeZoomId = signal<string | null>(null);
 
   currentActiveZoom = computed(() => {
-    return this.zoomRegions().find(z => z.id === this.activeZoomId()) || null;
+    return this.zoomRegions().find((z) => z.id === this.activeZoomId()) || null;
   });
 
   currentZoomState = computed(() => {
@@ -186,97 +243,116 @@ export class App {
     if (dur <= 0) return;
 
     const newZoom: ZoomRegion = {
-      id: 'zoom_' + Math.random().toString(36).substring(2, 11),
+      id: "zoom_" + Math.random().toString(36).substring(2, 11),
       startTime: current,
       duration: dur,
       scale: 2.0,
       panX: 0,
-      panY: 0
+      panY: 0,
     };
 
-    this.zoomRegions.update(zooms => [...zooms, newZoom]);
+    this.zoomRegions.update((zooms) => [...zooms, newZoom]);
     this.activeZoomId.set(newZoom.id);
-    this.logs.update(l => [
+    this.logs.update((l) => [
       ...l,
-      this.lang() === 'vi' 
-        ? `[Thu phóng] Đã thêm vùng thu phóng 2.0x tại ${current.toFixed(2)}s hiển thị trong ${dur.toFixed(1)}s` 
-        : `[Zoom & Pan] Added 2.0x zoom region at ${current.toFixed(2)}s for ${dur.toFixed(1)}s`
+      this.lang() === "vi"
+        ? `[Thu phóng] Đã thêm vùng thu phóng 2.0x tại ${current.toFixed(2)}s hiển thị trong ${dur.toFixed(1)}s`
+        : `[Zoom & Pan] Added 2.0x zoom region at ${current.toFixed(2)}s for ${dur.toFixed(1)}s`,
     ]);
   }
 
   deleteZoomRegion(id: string) {
-    this.zoomRegions.update(all => all.filter(z => z.id !== id));
+    this.zoomRegions.update((all) => all.filter((z) => z.id !== id));
     if (this.activeZoomId() === id) {
       this.activeZoomId.set(null);
     }
   }
 
   updateZoomStartTime(id: string, newTime: number) {
-    const validTime = Math.max(0, Math.min(this.videoDuration(), Number(newTime)));
-    this.zoomRegions.update(all => all.map(z => z.id === id ? { ...z, startTime: validTime } : z));
+    const validTime = Math.max(
+      0,
+      Math.min(this.videoDuration(), Number(newTime)),
+    );
+    this.zoomRegions.update((all) =>
+      all.map((z) => (z.id === id ? { ...z, startTime: validTime } : z)),
+    );
   }
 
   updateZoomDuration(id: string, newDuration: number) {
-    const validDur = Math.max(0.1, Math.min(this.videoDuration(), Number(newDuration)));
-    this.zoomRegions.update(all => all.map(z => z.id === id ? { ...z, duration: validDur } : z));
+    const validDur = Math.max(
+      0.1,
+      Math.min(this.videoDuration(), Number(newDuration)),
+    );
+    this.zoomRegions.update((all) =>
+      all.map((z) => (z.id === id ? { ...z, duration: validDur } : z)),
+    );
   }
 
   updateZoomScale(id: string, newScale: number) {
     const validScale = Math.max(1.0, Math.min(4.0, Number(newScale)));
-    this.zoomRegions.update(all => all.map(z => z.id === id ? { ...z, scale: validScale } : z));
+    this.zoomRegions.update((all) =>
+      all.map((z) => (z.id === id ? { ...z, scale: validScale } : z)),
+    );
   }
 
   updateZoomPanX(id: string, newPanX: number) {
     const validX = Math.max(0, Math.min(100, Number(newPanX)));
-    this.zoomRegions.update(all => all.map(z => z.id === id ? { ...z, panX: validX } : z));
+    this.zoomRegions.update((all) =>
+      all.map((z) => (z.id === id ? { ...z, panX: validX } : z)),
+    );
   }
 
   updateZoomPanY(id: string, newPanY: number) {
     const validY = Math.max(0, Math.min(100, Number(newPanY)));
-    this.zoomRegions.update(all => all.map(z => z.id === id ? { ...z, panY: validY } : z));
+    this.zoomRegions.update((all) =>
+      all.map((z) => (z.id === id ? { ...z, panY: validY } : z)),
+    );
   }
 
   getZoomQuadrantIcon(panX: number, panY: number): string {
-    if (panX === 25 && panY === 25) return 'north_west';
-    if (panX === 75 && panY === 25) return 'north_east';
-    if (panX === 25 && panY === 75) return 'south_west';
-    if (panX === 75 && panY === 75) return 'south_east';
-    return 'zoom_in';
+    if (panX === 25 && panY === 25) return "north_west";
+    if (panX === 75 && panY === 25) return "north_east";
+    if (panX === 25 && panY === 75) return "south_west";
+    if (panX === 75 && panY === 75) return "south_east";
+    return "zoom_in";
   }
 
   getZoomQuadrantLabelShort(panX: number, panY: number): string {
-    const isVi = this.lang() === 'vi';
-    if (panX === 25 && panY === 25) return isVi ? 'Trên - Trái' : 'Top Left';
-    if (panX === 75 && panY === 25) return isVi ? 'Trên - Phải' : 'Top Right';
-    if (panX === 25 && panY === 75) return isVi ? 'Dưới - Trái' : 'Btm Left';
-    if (panX === 75 && panY === 75) return isVi ? 'Dưới - Phải' : 'Btm Right';
-    return isVi ? 'Trung tâm' : 'Center';
+    const isVi = this.lang() === "vi";
+    if (panX === 25 && panY === 25) return isVi ? "Trên - Trái" : "Top Left";
+    if (panX === 75 && panY === 25) return isVi ? "Trên - Phải" : "Top Right";
+    if (panX === 25 && panY === 75) return isVi ? "Dưới - Trái" : "Btm Left";
+    if (panX === 75 && panY === 75) return isVi ? "Dưới - Phải" : "Btm Right";
+    return isVi ? "Trung tâm" : "Center";
   }
-  
+
   audioTracks = this.backgroundAudio.audioTracks;
   isExtractingBgWaveform = this.backgroundAudio.isExtractingBgWaveform;
   logoFile = signal<File | null>(null);
   logoPreviewUrl = signal<string | null>(null);
-  logoPosition = signal<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('top-right');
+  logoPosition = signal<
+    "top-left" | "top-right" | "bottom-left" | "bottom-right"
+  >("top-right");
   logoOpacity = signal<number>(50);
   logoSize = signal<number>(15);
   playingTrackId = this.backgroundAudio.playingTrackId;
   isolatedPreviewTime = this.backgroundAudio.isolatedPreviewTime;
-  
+
   currentTool = this.canvasDrawer.currentTool;
   color = this.canvasDrawer.color;
   strokes = this.canvasDrawer.strokes;
   activeStrokeId = this.canvasDrawer.activeStrokeId;
   currentActiveStroke = this.canvasDrawer.currentActiveStroke;
-  
+
   outputUrl = signal<string | null>(null);
 
   timelineZoom = signal<number>(1);
-  @ViewChild('timelineScrollContainer') timelineScrollContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild("timelineScrollContainer")
+  timelineScrollContainer!: ElementRef<HTMLDivElement>;
 
   currentTime = signal<number>(0);
   isPlaying = signal<boolean>(false);
-  activeDrag = signal<'start' | 'end' | 'playhead' | null>(null);
+  activeDrag = signal<"start" | "end" | "playhead" | null>(null);
 
   waveform = signal<number[]>([]);
   isExtractingWaveform = signal<boolean>(false);
@@ -284,7 +360,7 @@ export class App {
   rulerTicks = computed(() => {
     const duration = this.videoDuration();
     if (duration <= 0) return [];
-    
+
     let interval = 1;
     if (duration > 600) interval = 120;
     else if (duration > 300) interval = 60;
@@ -292,26 +368,27 @@ export class App {
     else if (duration > 60) interval = 10;
     else if (duration > 30) interval = 5;
     else if (duration > 15) interval = 2;
-    
+
     const ticks = [];
     for (let i = 0; i <= duration; i += interval) {
       ticks.push({
         time: i,
-        percent: (i / duration) * 100
+        percent: (i / duration) * 100,
       });
     }
     return ticks;
   });
 
-  @ViewChild('videoEl') videoEl!: ElementRef<HTMLVideoElement>;
-  @ViewChild('canvasEl') canvasEl!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('timelineContainer') timelineContainer!: ElementRef<HTMLDivElement>;
-  
+  @ViewChild("videoEl") videoEl!: ElementRef<HTMLVideoElement>;
+  @ViewChild("canvasEl") canvasEl!: ElementRef<HTMLCanvasElement>;
+  @ViewChild("timelineContainer")
+  timelineContainer!: ElementRef<HTMLDivElement>;
+
   private ctx: CanvasRenderingContext2D | null = null;
   private savedImageData: ImageData | null = null;
 
   reorderAudioTracks(event: { draggedIndex: number; targetIndex: number }) {
-    this.audioTracks.update(tracks => {
+    this.audioTracks.update((tracks) => {
       const newTracks = [...tracks];
       const [movedTrack] = newTracks.splice(event.draggedIndex, 1);
       newTracks.splice(event.targetIndex, 0, movedTrack);
@@ -328,10 +405,10 @@ export class App {
 
   initializeEngine() {
     this.isLoaded.set(true);
-    this.logs.update(l => [
+    this.logs.update((l) => [
       ...l,
       this.translations().msgInitSuccess,
-      this.translations().msgFeatures
+      this.translations().msgFeatures,
     ]);
   }
 
@@ -339,11 +416,16 @@ export class App {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
       this.errorMessage.set(null);
-      
+
       const maxSize = 300 * 1024 * 1024; // 300MB
       if (file.size > maxSize) {
-        this.errorMessage.set(this.translations().errMaxSize(300, (file.size / (1024 * 1024)).toFixed(1)));
-        (event.target as HTMLInputElement).value = '';
+        this.errorMessage.set(
+          this.translations().errMaxSize(
+            300,
+            (file.size / (1024 * 1024)).toFixed(1),
+          ),
+        );
+        (event.target as HTMLInputElement).value = "";
         return;
       }
 
@@ -359,7 +441,9 @@ export class App {
   }
 
   async onAudioSelected(event: Event) {
-    await this.backgroundAudio.onAudioSelected(event, () => this.syncBackgroundAudio());
+    await this.backgroundAudio.onAudioSelected(event, () =>
+      this.syncBackgroundAudio(),
+    );
   }
 
   removeAudioTrack(id: string) {
@@ -367,19 +451,27 @@ export class App {
   }
 
   setTrackVolume(id: string, volume: number) {
-    this.backgroundAudio.setTrackVolume(id, volume, () => this.syncBackgroundAudio());
+    this.backgroundAudio.setTrackVolume(id, volume, () =>
+      this.syncBackgroundAudio(),
+    );
   }
 
   setTrackTrimStart(id: string, start: number) {
-    this.backgroundAudio.setTrackTrimStart(id, start, () => this.syncBackgroundAudio());
+    this.backgroundAudio.setTrackTrimStart(id, start, () =>
+      this.syncBackgroundAudio(),
+    );
   }
 
   setTrackTrimEnd(id: string, end: number) {
-    this.backgroundAudio.setTrackTrimEnd(id, end, () => this.syncBackgroundAudio());
+    this.backgroundAudio.setTrackTrimEnd(id, end, () =>
+      this.syncBackgroundAudio(),
+    );
   }
 
   previewSpecificTrack(id: string) {
-    this.backgroundAudio.previewSpecificTrack(id, this.isPlaying(), () => this.togglePlay());
+    this.backgroundAudio.previewSpecificTrack(id, this.isPlaying(), () =>
+      this.togglePlay(),
+    );
   }
 
   stopIsolatedPreview() {
@@ -392,7 +484,7 @@ export class App {
       this.videoEl.nativeElement.volume = Math.max(0, Math.min(1.0, val / 100));
     }
   }
-  
+
   saveSegmentState() {
     this.videoSegmentsService.saveSegmentState();
   }
@@ -402,7 +494,9 @@ export class App {
   }
 
   splitSegmentAtPlayhead() {
-    this.videoSegmentsService.splitSegmentAtPlayhead(this.currentTime(), () => this.checkFormatLimits());
+    this.videoSegmentsService.splitSegmentAtPlayhead(this.currentTime(), () =>
+      this.checkFormatLimits(),
+    );
   }
 
   deleteSegment(id: string) {
@@ -410,16 +504,20 @@ export class App {
   }
 
   updateSegmentStart(id: string, val: number) {
-    this.videoSegmentsService.updateSegmentStart(id, val, () => this.checkFormatLimits());
+    this.videoSegmentsService.updateSegmentStart(id, val, () =>
+      this.checkFormatLimits(),
+    );
   }
 
   updateSegmentEnd(id: string, val: number) {
-    this.videoSegmentsService.updateSegmentEnd(id, val, () => this.checkFormatLimits());
+    this.videoSegmentsService.updateSegmentEnd(id, val, () =>
+      this.checkFormatLimits(),
+    );
   }
 
   checkFormatLimits() {
-    if (this.isGifDisabled() && this.outputFormat() === 'gif') {
-      this.outputFormat.set('mp4');
+    if (this.isGifDisabled() && this.outputFormat() === "gif") {
+      this.outputFormat.set("mp4");
     }
   }
 
@@ -443,10 +541,13 @@ export class App {
           video.currentTime = segments[0].start;
         }
       }
-      video.play().then(() => {
-        this.isPlaying.set(true);
-        this.syncBackgroundAudio();
-      }).catch(err => console.error(err));
+      video
+        .play()
+        .then(() => {
+          this.isPlaying.set(true);
+          this.syncBackgroundAudio();
+        })
+        .catch((err) => console.error(err));
     } else {
       video.pause();
       this.isPlaying.set(false);
@@ -459,31 +560,36 @@ export class App {
     if (!this.videoEl) return;
     const video = this.videoEl.nativeElement;
     const target = Math.max(0, Math.min(this.videoDuration(), seconds));
-    
+
     const wasPlaying = this.isPlaying() || !video.paused;
-    
+
     video.currentTime = target;
     this.currentTime.set(target);
     this.syncBackgroundAudio();
     this.redrawCanvas();
-    
+
     if (segmentId) {
       this.selectedSegmentId.set(segmentId);
     } else {
       // Auto select segment containing target seek time
-      const targetSeg = this.videoSegments().find(s => target >= s.start && target <= s.end);
+      const targetSeg = this.videoSegments().find(
+        (s) => target >= s.start && target <= s.end,
+      );
       if (targetSeg) {
         this.selectedSegmentId.set(targetSeg.id);
       }
     }
 
     if (wasPlaying) {
-      video.play().then(() => {
-        this.isPlaying.set(true);
-        this.syncBackgroundAudio();
-      }).catch(err => {
-        console.warn('Playback resume failed:', err);
-      });
+      video
+        .play()
+        .then(() => {
+          this.isPlaying.set(true);
+          this.syncBackgroundAudio();
+        })
+        .catch((err) => {
+          console.warn("Playback resume failed:", err);
+        });
     }
   }
 
@@ -491,8 +597,8 @@ export class App {
     const current = this.currentTime();
     const id = this.selectedSegmentId();
     if (id) {
-       this.updateSegmentStart(id, current);
-       this.seekTo(current);
+      this.updateSegmentStart(id, current);
+      this.seekTo(current);
     }
   }
 
@@ -500,8 +606,8 @@ export class App {
     const current = this.currentTime();
     const id = this.selectedSegmentId();
     if (id) {
-       this.updateSegmentEnd(id, current);
-       this.seekTo(current);
+      this.updateSegmentEnd(id, current);
+      this.seekTo(current);
     }
   }
 
@@ -512,18 +618,20 @@ export class App {
         return;
       }
       const currentOriginal = video.currentTime;
-      
+
       const segments = this.videoSegments();
       if (segments.length === 0) return;
-      
+
       this.isPlaying.set(!video.paused);
       this.redrawCanvas();
-      
+
       // Find current or nearest segment
-      const currentSegIndex = segments.findIndex(s => currentOriginal >= s.start && currentOriginal <= s.end);
-      
+      const currentSegIndex = segments.findIndex(
+        (s) => currentOriginal >= s.start && currentOriginal <= s.end,
+      );
+
       if (currentSegIndex === -1) {
-        const nextSeg = segments.find(s => s.start > currentOriginal);
+        const nextSeg = segments.find((s) => s.start > currentOriginal);
         if (nextSeg) {
           video.currentTime = nextSeg.start;
           this.currentTime.set(nextSeg.start);
@@ -541,9 +649,9 @@ export class App {
           return;
         }
       }
-      
+
       const currentSeg = segments[currentSegIndex];
-      
+
       // Auto transition to start of next segment if we hit the end of the current segment
       if (currentOriginal >= currentSeg.end - 0.05) {
         if (currentSegIndex + 1 < segments.length) {
@@ -563,7 +671,7 @@ export class App {
           return;
         }
       }
-      
+
       this.currentTime.set(currentOriginal);
       this.selectedSegmentId.set(currentSeg.id);
       this.autoScrollTimeline(currentOriginal);
@@ -575,13 +683,18 @@ export class App {
     this.backgroundAudio.syncBackgroundAudio(
       this.videoEl?.nativeElement,
       this.trimStart(),
-      this.trimEnd()
+      this.trimEnd(),
     );
   }
 
   autoScrollTimeline(currentTime: number) {
-    if (!this.timelineScrollContainer || !this.timelineContainer || this.videoDuration() === 0) return;
-    
+    if (
+      !this.timelineScrollContainer ||
+      !this.timelineContainer ||
+      this.videoDuration() === 0
+    )
+      return;
+
     // We only auto-scroll if it's playing and not currently dragging
     if (!this.isPlaying() || this.activeDrag()) return;
 
@@ -590,7 +703,7 @@ export class App {
 
     const percentage = currentTime / this.videoDuration();
     const playheadPx = percentage * trackEl.getBoundingClientRect().width;
-    
+
     // Viewport width of the scroll container
     const viewWidth = scrollEl.clientWidth;
     const currentScroll = scrollEl.scrollLeft;
@@ -608,23 +721,29 @@ export class App {
     }
   }
 
-  onTimelineMouseDown(event: MouseEvent, target: 'start' | 'end' | 'playhead' | 'track') {
+  onTimelineMouseDown(
+    event: MouseEvent,
+    target: "start" | "end" | "playhead" | "track",
+  ) {
     event.preventDefault();
     event.stopPropagation();
-    
-    if (target === 'track') {
-      this.activeDrag.set('playhead');
+
+    if (target === "track") {
+      this.activeDrag.set("playhead");
       this.handleTimelineDrag(event);
     } else {
       this.activeDrag.set(target);
     }
   }
 
-  onTimelineTouchStart(event: TouchEvent, target: 'start' | 'end' | 'playhead' | 'track') {
+  onTimelineTouchStart(
+    event: TouchEvent,
+    target: "start" | "end" | "playhead" | "track",
+  ) {
     event.stopPropagation();
-    
-    if (target === 'track') {
-      this.activeDrag.set('playhead');
+
+    if (target === "track") {
+      this.activeDrag.set("playhead");
       this.handleTimelineDrag(event);
     } else {
       this.activeDrag.set(target);
@@ -635,14 +754,14 @@ export class App {
     event.stopPropagation();
     event.preventDefault();
     this.selectedSegmentId.set(seg.id);
-    this.activeDrag.set('playhead');
+    this.activeDrag.set("playhead");
     this.handleTimelineDrag(event);
   }
 
   onSegmentTouchStart(event: TouchEvent, seg: VideoSegment) {
     event.stopPropagation();
     this.selectedSegmentId.set(seg.id);
-    this.activeDrag.set('playhead');
+    this.activeDrag.set("playhead");
     this.handleTimelineDrag(event);
   }
 
@@ -669,45 +788,57 @@ export class App {
 
   handleTimelineDrag(event: MouseEvent | TouchEvent) {
     if (!this.timelineContainer || !this.videoDuration()) return;
-    
+
     const rect = this.timelineContainer.nativeElement.getBoundingClientRect();
-    const clientX = 'touches' in event ? event.touches[0].clientX : (event as MouseEvent).clientX;
+    const clientX =
+      "touches" in event
+        ? event.touches[0].clientX
+        : (event as MouseEvent).clientX;
     const relativeX = clientX - rect.left;
     const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
     const targetTime = percentage * this.videoDuration();
-    
+
     const dragType = this.activeDrag();
-    if (dragType === 'start' || dragType === 'end') {
+    if (dragType === "start" || dragType === "end") {
       const selId = this.selectedSegmentId();
       const segments = this.videoSegments();
-      const activeSeg = segments.find(s => s.id === selId) || segments[0];
+      const activeSeg = segments.find((s) => s.id === selId) || segments[0];
       if (!activeSeg) return;
-      
-      if (dragType === 'start') {
+
+      if (dragType === "start") {
         this.updateSegmentStart(activeSeg.id, targetTime);
-        const updatedSeg = this.videoSegments().find(s => s.id === activeSeg.id);
+        const updatedSeg = this.videoSegments().find(
+          (s) => s.id === activeSeg.id,
+        );
         if (updatedSeg) {
           this.seekTo(updatedSeg.start);
         }
       } else {
         this.updateSegmentEnd(activeSeg.id, targetTime);
-        const updatedSeg = this.videoSegments().find(s => s.id === activeSeg.id);
+        const updatedSeg = this.videoSegments().find(
+          (s) => s.id === activeSeg.id,
+        );
         if (updatedSeg) {
           this.seekTo(updatedSeg.end);
         }
       }
-    } else if (dragType === 'playhead') {
+    } else if (dragType === "playhead") {
       this.seekTo(targetTime);
     }
   }
 
   onVideoLoadedMetadata(event: Event) {
     const video = event.target as HTMLVideoElement;
-    
+
     const maxDuration = 30 * 60; // 30 minutes in seconds
     if (video.duration > maxDuration) {
-      this.errorMessage.set(this.translations().errMaxDuration(30, (video.duration / 60).toFixed(1)));
-      
+      this.errorMessage.set(
+        this.translations().errMaxDuration(
+          30,
+          (video.duration / 60).toFixed(1),
+        ),
+      );
+
       if (this.videoUrl()) {
         URL.revokeObjectURL(this.videoUrl()!);
       }
@@ -720,18 +851,20 @@ export class App {
 
     this.videoWidth.set(video.videoWidth);
     this.videoHeight.set(video.videoHeight);
-    
+
     // Initialize starting segment covering full video using our service
     this.videoSegmentsService.resetSegments(video.duration);
 
     this.checkFormatLimits();
-    
+
     video.volume = Math.max(0, Math.min(1.0, this.volume() / 100));
-    
+
     if (this.canvasEl) {
       this.canvasEl.nativeElement.width = video.videoWidth;
       this.canvasEl.nativeElement.height = video.videoHeight;
-      this.ctx = this.canvasEl.nativeElement.getContext('2d', { willReadFrequently: true });
+      this.ctx = this.canvasEl.nativeElement.getContext("2d", {
+        willReadFrequently: true,
+      });
       if (this.ctx) {
         this.canvasDrawer.init(this.canvasEl.nativeElement, this.ctx);
       }
@@ -739,13 +872,85 @@ export class App {
   }
 
   // --- Canvas Drawing Logic ---
-  
+
   getMousePos(e: MouseEvent | TouchEvent) {
     return this.canvasDrawer.getMousePos(this.canvasEl.nativeElement, e);
   }
 
   redrawCanvas() {
-    this.canvasDrawer.redrawCanvas(this.videoWidth(), this.videoHeight(), this.currentTime());
+    let introState = undefined;
+    if (this.introPreviewTimestamp()) {
+      const elapsed =
+        (performance.now() - this.introPreviewTimestamp()!) / 1000;
+      if (elapsed <= this.introSettings().duration) {
+        introState = { active: true, settings: this.introSettings(), elapsed };
+        requestAnimationFrame(() => this.redrawCanvas());
+      } else {
+        this.introPreviewTimestamp.set(null);
+        if (this.introAudioEl) {
+          this.introAudioEl.pause();
+          this.introAudioEl.src = "";
+          this.introAudioEl = null;
+        }
+      }
+    }
+    this.canvasDrawer.redrawCanvas(
+      this.videoWidth(),
+      this.videoHeight(),
+      this.currentTime(),
+      introState,
+    );
+  }
+
+  introAudioEl: HTMLAudioElement | null = null;
+
+  previewIntro() {
+    const settings = this.introSettings();
+    if (!settings.enabled) return;
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // Pause video
+    if (this.videoEl) {
+      this.videoEl.nativeElement.pause();
+    }
+    this.isPlaying.set(false);
+    this.syncBackgroundAudio();
+
+    if (settings.audioUrl) {
+      if (this.introAudioEl) {
+        this.introAudioEl.pause();
+      }
+      this.introAudioEl = new Audio(settings.audioUrl);
+      this.introAudioEl.volume = settings.audioVolume / 100;
+      this.introAudioEl.play().catch((e) => console.error(e));
+    }
+
+    this.introPreviewTimestamp.set(performance.now());
+    this.redrawCanvas();
+  }
+
+  zoomPreviewTimeout: any;
+
+  previewZoomRegion(id: string) {
+    const region = this.zoomRegions().find((r) => r.id === id);
+    if (!region) return;
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    this.seekTo(region.startTime);
+
+    if (this.zoomPreviewTimeout) {
+      clearTimeout(this.zoomPreviewTimeout);
+    }
+
+    setTimeout(() => {
+      if (this.videoEl) {
+        this.videoEl.nativeElement.play();
+        this.zoomPreviewTimeout = setTimeout(() => {
+          this.videoEl?.nativeElement.pause();
+        }, region.duration * 1000);
+      }
+    }, 400); // Give smooth scrolling a moment to finish
   }
 
   onPointerDown(e: MouseEvent | TouchEvent) {
@@ -753,35 +958,74 @@ export class App {
   }
 
   onPointerMove(e: MouseEvent | TouchEvent) {
-    this.canvasDrawer.onPointerMove(e, this.currentTime(), this.videoWidth(), this.videoHeight());
+    this.canvasDrawer.onPointerMove(
+      e,
+      this.currentTime(),
+      this.videoWidth(),
+      this.videoHeight(),
+    );
   }
 
   onPointerUp() {
-    this.canvasDrawer.onPointerUp(this.videoWidth(), this.videoHeight(), this.currentTime());
+    this.canvasDrawer.onPointerUp(
+      this.videoWidth(),
+      this.videoHeight(),
+      this.currentTime(),
+    );
   }
-  
+
   clearCanvas() {
     this.canvasDrawer.clearCanvas();
   }
 
   deleteStroke(id: string) {
-    this.canvasDrawer.deleteStroke(id, this.videoWidth(), this.videoHeight(), this.currentTime());
+    this.canvasDrawer.deleteStroke(
+      id,
+      this.videoWidth(),
+      this.videoHeight(),
+      this.currentTime(),
+    );
   }
 
   updateStrokeStartTime(id: string, newTime: number) {
-    this.canvasDrawer.updateStrokeStartTime(id, newTime, this.videoDuration(), this.videoWidth(), this.videoHeight(), this.currentTime());
+    this.canvasDrawer.updateStrokeStartTime(
+      id,
+      newTime,
+      this.videoDuration(),
+      this.videoWidth(),
+      this.videoHeight(),
+      this.currentTime(),
+    );
   }
 
   updateStrokeDuration(id: string, newDuration: number) {
-    this.canvasDrawer.updateStrokeDuration(id, newDuration, this.videoWidth(), this.videoHeight(), this.currentTime());
+    this.canvasDrawer.updateStrokeDuration(
+      id,
+      newDuration,
+      this.videoWidth(),
+      this.videoHeight(),
+      this.currentTime(),
+    );
   }
 
   updateStrokeText(id: string, newText: string) {
-    this.canvasDrawer.updateStrokeText(id, newText, this.videoWidth(), this.videoHeight(), this.currentTime());
+    this.canvasDrawer.updateStrokeText(
+      id,
+      newText,
+      this.videoWidth(),
+      this.videoHeight(),
+      this.currentTime(),
+    );
   }
 
   updateStrokeFontSize(id: string, newFontSize: number) {
-    this.canvasDrawer.updateStrokeFontSize(id, newFontSize, this.videoWidth(), this.videoHeight(), this.currentTime());
+    this.canvasDrawer.updateStrokeFontSize(
+      id,
+      newFontSize,
+      this.videoWidth(),
+      this.videoHeight(),
+      this.currentTime(),
+    );
   }
 
   // --- Rendering logic ---
@@ -810,11 +1054,12 @@ export class App {
       logoSize: this.logoSize(),
       appliedFilters: this.appliedFilters(),
       zoomRegions: this.zoomRegions(),
+      introSettings: this.introSettings(),
       canvasElement: this.canvasEl.nativeElement,
       strokes: this.strokes(),
       translations: this.translations(),
       onProgress: (pct: number) => this.progress.set(pct),
-      onLog: (msg: string) => this.logs.update(l => [...l, msg]),
+      onLog: (msg: string) => this.logs.update((l) => [...l, msg]),
       onSuccess: (url: string) => {
         if (this.outputUrl()) {
           URL.revokeObjectURL(this.outputUrl()!);
@@ -824,31 +1069,39 @@ export class App {
 
         // Auto-download trigger
         try {
-          const originalName = this.videoFile()?.name || 'video';
-          const baseName = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+          const originalName = this.videoFile()?.name || "video";
+          const baseName =
+            originalName.substring(0, originalName.lastIndexOf(".")) ||
+            originalName;
           const extension = this.outputFormat();
           const downloadName = `${baseName}_ichigo.${extension}`;
 
-          const a = document.createElement('a');
+          const a = document.createElement("a");
           a.href = url;
           a.download = downloadName;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          this.logs.update(l => [...l, `[Downloader] Download triggered automatically: ${downloadName}`]);
+          this.logs.update((l) => [
+            ...l,
+            `[Downloader] Download triggered automatically: ${downloadName}`,
+          ]);
         } catch (downloadErr) {
-          console.error('Trigger download failed', downloadErr);
-          this.logs.update(l => [...l, `[Downloader] Error during auto-download: ${downloadErr}`]);
+          console.error("Trigger download failed", downloadErr);
+          this.logs.update((l) => [
+            ...l,
+            `[Downloader] Error during auto-download: ${downloadErr}`,
+          ]);
         }
       },
       onError: (err: unknown) => {
         console.error(err);
-        this.logs.update(l => [...l, `Rendering Pipeline Error: ${err}`]);
+        this.logs.update((l) => [...l, `Rendering Pipeline Error: ${err}`]);
         this.isProcessing.set(false);
-      }
+      },
     };
 
-    if (this.outputFormat() === 'gif') {
+    if (this.outputFormat() === "gif") {
       await this.exportProcessor.exportGif(config);
     } else {
       await this.exportProcessor.exportVideo(config);
@@ -856,16 +1109,16 @@ export class App {
   }
 
   getExtension(filename: string) {
-    return filename.substring(filename.lastIndexOf('.')) || '';
+    return filename.substring(filename.lastIndexOf(".")) || "";
   }
-  
+
   downloadCanvas() {
     this.canvasEl.nativeElement.toBlob((blob) => {
-      if(!blob) return;
+      if (!blob) return;
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = 'annotation.png';
+      a.download = "annotation.png";
       a.click();
       URL.revokeObjectURL(url);
     });
@@ -874,14 +1127,15 @@ export class App {
   extractAudioWaveform(file: File) {
     this.isExtractingWaveform.set(true);
     this.waveform.set([]);
-    
-    this.waveformProcessor.extractWaveform(file, 120)
+
+    this.waveformProcessor
+      .extractWaveform(file, 120)
       .then((amps) => {
         this.waveform.set(amps);
         this.isExtractingWaveform.set(false);
       })
       .catch((err) => {
-        console.warn('Waveform extraction failed:', err);
+        console.warn("Waveform extraction failed:", err);
         // Set a flat baseline of silent bars if extraction fails (no fake simulation)
         this.waveform.set(Array(120).fill(0.12));
         this.isExtractingWaveform.set(false);
@@ -894,5 +1148,4 @@ export class App {
     const barTime = (index / 120) * duration;
     return barTime >= this.trimStart() && barTime <= this.trimEnd();
   }
-
 }

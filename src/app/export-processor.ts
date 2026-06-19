@@ -4,6 +4,7 @@ import { GifExporter } from './gif-exporter';
 import { Stroke } from './stroke.types';
 import { VideoSegment } from './segments';
 import { AppliedFilter } from './filters.types';
+import { ZoomRegion } from './zoom.types';
 
 export interface ExportConfig {
   videoUrl: string;
@@ -22,6 +23,8 @@ export interface ExportConfig {
   logoOpacity: number;
   logoSize: number;
   appliedFilters?: AppliedFilter[];
+  zoomRegions?: ZoomRegion[];
+  introSettings?: any;
   canvasElement: HTMLCanvasElement;
   strokes: Stroke[];
   translations: {
