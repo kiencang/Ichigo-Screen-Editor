@@ -628,10 +628,14 @@ export class App {
   }
 
   syncBackgroundAudio() {
+    const elapsed = this.introPreviewTimestamp() ? (performance.now() - this.introPreviewTimestamp()!) / 1000 : 0;
+    const isIntroActive = this.introPreviewTimestamp() !== null && elapsed <= this.introSettings().duration;
+
     this.backgroundAudio.syncBackgroundAudio(
       this.videoEl?.nativeElement,
       this.trimStart(),
       this.trimEnd(),
+      isIntroActive
     );
   }
 

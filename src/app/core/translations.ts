@@ -43,6 +43,7 @@ export interface AppTranslations {
   downloadFallback: string;
   bgAudioTrack: string;
   bgMusicVolume: string;
+  trimRange: string;
   extractingBgWaveform: string;
   errMaxSize: (maxMB: number, actualMB: string) => string;
   errMaxDuration: (maxMin: number, actualMin: string) => string;
@@ -109,6 +110,7 @@ export function getTranslations(lang: 'vi' | 'en'): AppTranslations {
     downloadFallback: isVi ? 'Tải lại' : 'Redownload',
     bgAudioTrack: isVi ? 'Nhạc nền' : 'Background music',
     bgMusicVolume: isVi ? 'Âm lượng nhạc nền' : 'Background Music Volume',
+    trimRange: isVi ? 'Khoảng cắt' : 'Trim range',
     extractingBgWaveform: isVi ? 'Đang phân tích nhạc nền...' : 'Analyzing background music...',
     errMaxSize: (maxMB: number, actualMB: string) => isVi 
       ? `Dung lượng video vượt quá giới hạn cho phép (Tối đa ${maxMB}MB. Tệp tin của bạn: ${actualMB}MB).` 
