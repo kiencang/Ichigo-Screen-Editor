@@ -10,37 +10,30 @@ import {
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
-import { getTranslations } from "./translations";
-import { TimeFormatter } from "./time-formatter";
-import { WaveformProcessor } from "./waveform-processor";
-import { CanvasDrawer } from "./canvas-drawer";
-import { ExportProcessor } from "./export-processor";
-import {
-  VIDEO_FILTERS,
-  AppliedFilter,
-  getAppliedFiltersCSSAtTime,
-} from "./filters.types";
-import { VideoSegment } from "./segments";
-import { ZoomRegion, getZoomAtTime } from "./zoom.types";
-import { BackgroundAudio } from "./background-audio";
-import { BackgroundAudioPanel } from "./background-audio-panel";
-import { VideoSegments } from "./video-segments";
-import { VideoFilters } from "./video-filters";
-import { ExportPanel } from "./export-panel";
-import { WatermarkPanel } from "./watermark-panel";
-import { StrokePropertiesPanel } from "./stroke-properties-panel";
-import { AppHeader } from "./header";
-import { AppFooter } from "./footer";
-import { UploadPanel } from "./upload-panel";
-import { AppStrokesList } from "./strokes-list";
-import { AppAppliedFiltersList } from "./applied-filters-list";
-import { AppZoomRegionsList } from "./zoom-regions-list";
-import { IntroPanelComponent } from "./intro-panel";
-import { IntroSettings, DEFAULT_INTRO_SETTINGS } from "./intro.types";
-import { AnnotationToolsComponent } from "./annotation-tools";
-import { ZoomRegionsService } from "./zoom-regions.service";
-import { VideoFiltersService } from "./video-filters.service";
-import { EditorStateService } from "./editor-state.service";
+import { getTranslations } from "./core/translations";
+import { TimeFormatter } from "./core/time-formatter";
+import { WaveformProcessor } from "./audio/waveform-processor";
+import { CanvasDrawer } from "./canvas/canvas-drawer";
+import { VideoSegment } from "./segments/segments";
+import { BackgroundAudio } from "./audio/background-audio";
+import { BackgroundAudioPanel } from "./audio/background-audio-panel";
+import { VideoSegments } from "./segments/video-segments";
+import { VideoFilters } from "./filters/video-filters";
+import { ExportPanel } from "./export/export-panel";
+import { WatermarkPanel } from "./watermark/watermark-panel";
+import { AppHeader } from "./layout/header";
+import { AppFooter } from "./layout/footer";
+import { UploadPanel } from "./upload/upload-panel";
+import { AppStrokesList } from "./canvas/strokes-list";
+import { AppAppliedFiltersList } from "./filters/applied-filters-list";
+import { AppZoomRegionsList } from "./zoom/zoom-regions-list";
+import { IntroPanelComponent } from "./intro/intro-panel";
+import { IntroSettings, DEFAULT_INTRO_SETTINGS } from "./intro/intro.types";
+import { AnnotationToolsComponent } from "./canvas/annotation-tools";
+import { ZoomRegionsService } from "./zoom/zoom-regions.service";
+import { VideoFiltersService } from "./filters/video-filters.service";
+import { EditorStateService } from "./core/editor-state.service";
+import { ExportOrchestratorService } from "./export/export-orchestrator.service";
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -67,7 +60,7 @@ import { EditorStateService } from "./editor-state.service";
 export class App {
   private waveformProcessor = inject(WaveformProcessor);
   private canvasDrawer = inject(CanvasDrawer);
-  private exportProcessor = inject(ExportProcessor);
+  private exportOrchestratorService = inject(ExportOrchestratorService);
   readonly backgroundAudio = inject(BackgroundAudio);
   readonly videoSegmentsService = inject(VideoSegments);
 
@@ -137,8 +130,8 @@ export class App {
 
   isLoaded = signal(false);
   isLoading = signal(false);
-  isProcessing = signal(false);
-  progress = signal(0);
+  isProcessing = this.exportOrchestratorService.isProcessing;
+  progress = this.exportOrchestratorService.progress;
   errorMessage = signal<string | null>(null);
 
   private zoomRegionsService = inject(ZoomRegionsService);
@@ -849,12 +842,7 @@ export class App {
         }
       }
     }
-    this.canvasDrawer.redrawCanvas(
-      this.videoWidth(),
-      this.videoHeight(),
-      this.currentTime(),
-      introState,
-    );
+    this.canvasDrawer.redrawCanvas(introState);
   }
 
   introAudioEl: HTMLAudioElement | null = null;
@@ -885,7 +873,7 @@ export class App {
     this.redrawCanvas();
   }
 
-  zoomPreviewTimeout: any;
+  zoomPreviewTimeout: ReturnType<typeof setTimeout> | null = null;
 
   previewZoomRegion(id: string) {
     const region = this.zoomRegions().find((r) => r.id === id);
@@ -909,24 +897,15 @@ export class App {
   }
 
   onPointerDown(e: MouseEvent | TouchEvent) {
-    this.canvasDrawer.onPointerDown(e, this.videoWidth(), this.currentTime());
+    this.canvasDrawer.onPointerDown(e);
   }
 
   onPointerMove(e: MouseEvent | TouchEvent) {
-    this.canvasDrawer.onPointerMove(
-      e,
-      this.currentTime(),
-      this.videoWidth(),
-      this.videoHeight(),
-    );
+    this.canvasDrawer.onPointerMove(e);
   }
 
   onPointerUp() {
-    this.canvasDrawer.onPointerUp(
-      this.videoWidth(),
-      this.videoHeight(),
-      this.currentTime(),
-    );
+    this.canvasDrawer.onPointerUp();
   }
 
   clearCanvas() {
@@ -934,133 +913,34 @@ export class App {
   }
 
   deleteStroke(id: string) {
-    this.canvasDrawer.deleteStroke(
-      id,
-      this.videoWidth(),
-      this.videoHeight(),
-      this.currentTime(),
-    );
+    this.canvasDrawer.deleteStroke(id);
   }
 
   updateStrokeStartTime(id: string, newTime: number) {
-    this.canvasDrawer.updateStrokeStartTime(
-      id,
-      newTime,
-      this.videoDuration(),
-      this.videoWidth(),
-      this.videoHeight(),
-      this.currentTime(),
-    );
+    this.canvasDrawer.updateStrokeStartTime(id, newTime);
   }
 
   updateStrokeDuration(id: string, newDuration: number) {
-    this.canvasDrawer.updateStrokeDuration(
-      id,
-      newDuration,
-      this.videoWidth(),
-      this.videoHeight(),
-      this.currentTime(),
-    );
+    this.canvasDrawer.updateStrokeDuration(id, newDuration);
   }
 
   updateStrokeText(id: string, newText: string) {
-    this.canvasDrawer.updateStrokeText(
-      id,
-      newText,
-      this.videoWidth(),
-      this.videoHeight(),
-      this.currentTime(),
-    );
+    this.canvasDrawer.updateStrokeText(id, newText);
   }
 
   updateStrokeFontSize(id: string, newFontSize: number) {
-    this.canvasDrawer.updateStrokeFontSize(
-      id,
-      newFontSize,
-      this.videoWidth(),
-      this.videoHeight(),
-      this.currentTime(),
-    );
+    this.canvasDrawer.updateStrokeFontSize(id, newFontSize);
   }
 
   // --- Rendering logic ---
 
   async exportVideo() {
     if (!this.isLoaded() || !this.videoFile() || !this.videoUrl()) return;
-    this.isProcessing.set(true);
-    this.progress.set(0);
-    this.logs.set([]);
-
-    const config = {
-      videoUrl: this.videoUrl()!,
-      videoWidth: this.videoWidth(),
-      videoHeight: this.videoHeight(),
-      videoDuration: this.videoDuration(),
-      videoSegments: this.videoSegments(),
-      volume: this.volume(),
-      outputFormat: this.outputFormat(),
-      videoFile: this.videoFile(),
-      audioBitrate: this.audioBitrate(),
-      videoBitrate: this.videoBitrate(),
-      audioTracks: this.audioTracks(),
-      logoFile: this.logoFile(),
-      logoPosition: this.logoPosition(),
-      logoOpacity: this.logoOpacity(),
-      logoSize: this.logoSize(),
-      appliedFilters: this.appliedFilters(),
-      zoomRegions: this.zoomRegions(),
-      introSettings: this.introSettings(),
-      canvasElement: this.canvasEl.nativeElement,
-      strokes: this.strokes(),
-      translations: this.translations(),
-      onProgress: (pct: number) => this.progress.set(pct),
-      onLog: (msg: string) => this.logs.update((l) => [...l, msg]),
-      onSuccess: (url: string) => {
-        if (this.outputUrl()) {
-          URL.revokeObjectURL(this.outputUrl()!);
-        }
-        this.outputUrl.set(url);
-        this.isProcessing.set(false);
-
-        // Auto-download trigger
-        try {
-          const originalName = this.videoFile()?.name || "video";
-          const baseName =
-            originalName.substring(0, originalName.lastIndexOf(".")) ||
-            originalName;
-          const extension = this.outputFormat();
-          const downloadName = `${baseName}_ichigo.${extension}`;
-
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = downloadName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          this.logs.update((l) => [
-            ...l,
-            `[Downloader] Download triggered automatically: ${downloadName}`,
-          ]);
-        } catch (downloadErr) {
-          console.error("Trigger download failed", downloadErr);
-          this.logs.update((l) => [
-            ...l,
-            `[Downloader] Error during auto-download: ${downloadErr}`,
-          ]);
-        }
-      },
-      onError: (err: unknown) => {
-        console.error(err);
-        this.logs.update((l) => [...l, `Rendering Pipeline Error: ${err}`]);
-        this.isProcessing.set(false);
-      },
-    };
-
-    if (this.outputFormat() === "gif") {
-      await this.exportProcessor.exportGif(config);
-    } else {
-      await this.exportProcessor.exportVideo(config);
-    }
+    await this.exportOrchestratorService.exportVideo(
+      this.canvasEl.nativeElement,
+      this.introSettings(),
+      this.translations(),
+    );
   }
 
   getExtension(filename: string) {
