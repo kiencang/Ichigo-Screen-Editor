@@ -150,6 +150,35 @@ export class App {
   selectedSegmentIndex = this.videoSegmentsService.selectedSegmentIndex;
   canUndo = this.videoSegmentsService.canUndo;
   isGifDisabled = this.videoSegmentsService.isGifDisabled;
+  transitionDuration = this.editorState.transitionDuration;
+
+  transitionFadeOpacity = computed(() => {
+    const time = this.currentTime();
+    const segments = this.videoSegments();
+    if (segments.length <= 1) return 0;
+
+    const idx = segments.findIndex(s => time >= s.start && time <= s.end);
+    if (idx === -1) return 0;
+
+    const seg = segments[idx];
+    const duration = seg.end - seg.start;
+    // Fade duration is half of the total transition duration, bounded by half of the segment duration
+    const activeFadeDuration = Math.min(this.transitionDuration() / 2, duration / 2);
+
+    // Fade in at start of segment (only if it's not the first segment)
+    if (idx > 0 && time < seg.start + activeFadeDuration) {
+      const progress = (time - seg.start) / activeFadeDuration;
+      return Math.max(0, Math.min(1, 1 - progress));
+    }
+
+    // Fade out at end of segment (only if it's not the last segment)
+    if (idx < segments.length - 1 && time > seg.end - activeFadeDuration) {
+      const progress = (seg.end - time) / activeFadeDuration;
+      return Math.max(0, Math.min(1, 1 - progress));
+    }
+
+    return 0;
+  });
 
   // --- Zoom States ---
   zoomRegions = this.zoomRegionsService.zoomRegions;
@@ -620,6 +649,11 @@ export class App {
         }
       }
 
+      // Update video volume based on transition fade
+      const baseVol = this.volume() / 100;
+      const fadedVol = baseVol * (1 - this.transitionFadeOpacity());
+      video.volume = Math.max(0, Math.min(1.0, fadedVol));
+
       this.currentTime.set(currentOriginal);
       this.selectedSegmentId.set(currentSeg.id);
       this.autoScrollTimeline(currentOriginal);
@@ -633,6 +667,7 @@ export class App {
 
     this.backgroundAudio.syncBackgroundAudio(
       this.videoEl?.nativeElement,
+      this.videoSegments(),
       this.trimStart(),
       this.trimEnd(),
       isIntroActive

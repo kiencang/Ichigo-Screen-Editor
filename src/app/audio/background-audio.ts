@@ -2,6 +2,7 @@ import { Injectable, signal, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { WaveformProcessor } from './waveform-processor';
 import * as Tone from 'tone';
+import { getVirtualTime, VideoSegment } from '../segments/segments';
 
 export interface AudioTrack {
   id: string;
@@ -123,7 +124,7 @@ export class BackgroundAudio {
           url,
           duration,
           waveform,
-          volume: 25, // default slightly higher to be clearer
+          volume: 10, // default volume at 10%
           trimStart: 0,
           trimEnd: duration
         });
@@ -242,6 +243,7 @@ export class BackgroundAudio {
 
   syncBackgroundAudio(
     videoEl: HTMLVideoElement | null | undefined,
+    segments: VideoSegment[],
     trimStart: number,
     trimEnd: number,
     muffled = false
@@ -266,7 +268,11 @@ export class BackgroundAudio {
     // Find which track corresponds to the current video time relative to trimStart
     if (!videoEl) return;
     const videoCurrentTime = videoEl.currentTime;
-    const relativeTime = Math.max(0, videoCurrentTime - trimStart);
+
+    // Use virtualTime mappings to avoid audio cutting out on deleted segments
+    const relativeTime = segments && segments.length > 0 
+      ? getVirtualTime(videoCurrentTime, segments)
+      : Math.max(0, videoCurrentTime - trimStart);
     
     let accumulatedTime = 0;
     let targetTrack = null;
@@ -294,7 +300,27 @@ export class BackgroundAudio {
     }
 
     if (this.mainVolume) {
-      const dbValue = Tone.gainToDb(Math.max(0.001, targetTrack.volume / 100));
+      let transitionFadeOpacity = 0;
+      if (segments && segments.length > 1 && videoEl) {
+        const idx = segments.findIndex(s => videoCurrentTime >= s.start && videoCurrentTime <= s.end);
+        if (idx !== -1) {
+          const seg = segments[idx];
+          const segDuration = seg.end - seg.start;
+          const activeFadeDuration = Math.min(0.25, segDuration / 2);
+
+          if (idx > 0 && videoCurrentTime < seg.start + activeFadeDuration) {
+            const progress = (videoCurrentTime - seg.start) / activeFadeDuration;
+            transitionFadeOpacity = Math.max(0, Math.min(1, 1 - progress));
+          } else if (idx < segments.length - 1 && videoCurrentTime > seg.end - activeFadeDuration) {
+            const progress = (seg.end - videoCurrentTime) / activeFadeDuration;
+            transitionFadeOpacity = Math.max(0, Math.min(1, 1 - progress));
+          }
+        }
+      }
+
+      const baseGain = targetTrack.volume / 100;
+      const fadedGain = baseGain * (1 - transitionFadeOpacity);
+      const dbValue = Tone.gainToDb(Math.max(0.001, fadedGain));
       this.mainVolume.volume.value = dbValue;
     }
     

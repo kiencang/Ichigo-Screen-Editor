@@ -5,6 +5,7 @@ import { Stroke } from '../canvas/stroke.types';
 import { VideoSegment } from '../segments/segments';
 import { AppliedFilter } from '../filters/filters.types';
 import { ZoomRegion } from '../zoom/zoom.types';
+import { IntroSettings } from '../intro/intro.types';
 
 export interface ExportConfig {
   videoUrl: string;
@@ -24,7 +25,8 @@ export interface ExportConfig {
   logoSize: number;
   appliedFilters?: AppliedFilter[];
   zoomRegions?: ZoomRegion[];
-  introSettings?: any;
+  introSettings?: IntroSettings;
+  transitionDuration?: number;
   canvasElement: HTMLCanvasElement;
   strokes: Stroke[];
   translations: {

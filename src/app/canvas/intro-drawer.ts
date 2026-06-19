@@ -1,6 +1,8 @@
+import { IntroSettings } from '../intro/intro.types';
+
 export function drawIntroOnContext(
   ctx: CanvasRenderingContext2D,
-  settings: any,
+  settings: IntroSettings,
   elapsed: number,
   w: number,
   h: number,

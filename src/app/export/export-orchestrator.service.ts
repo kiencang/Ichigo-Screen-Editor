@@ -50,6 +50,7 @@ export class ExportOrchestratorService {
       appliedFilters: this.videoFiltersService.appliedFilters(),
       zoomRegions: this.zoomRegionsService.zoomRegions(),
       introSettings: introSettings,
+      transitionDuration: this.editorState.transitionDuration(),
       canvasElement: canvasElement,
       strokes: this.canvasDrawer.strokes(),
       translations: translations,

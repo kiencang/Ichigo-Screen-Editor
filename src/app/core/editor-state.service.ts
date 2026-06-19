@@ -34,6 +34,7 @@ export class EditorStateService {
   logoPosition = signal<"top-left" | "top-right" | "bottom-left" | "bottom-right">("top-right");
   logoOpacity = signal<number>(50);
   logoSize = signal<number>(15);
+  transitionDuration = signal<number>(1); // Duration for segment transitions in seconds
 
   logs = signal<string[]>([]);
 

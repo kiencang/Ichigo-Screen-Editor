@@ -6,9 +6,9 @@ import { AppTranslations } from '../core/translations';
   selector: 'app-export-panel',
   imports: [MatIconModule],
   template: `
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-6 relative">
       <!-- Export Settings Card -->
-      <div class="p-4 rounded-2xl bg-neutral-900 border border-white/5 flex flex-col gap-6">
+      <fieldset [disabled]="isProcessing()" class="p-4 rounded-2xl bg-neutral-900 border border-white/5 flex flex-col gap-6 disabled:opacity-50">
         <!-- Volume -->
         <div class="flex flex-col gap-4">
            <div class="flex flex-col gap-2">
@@ -66,7 +66,19 @@ import { AppTranslations } from '../core/translations';
              </select>
           </div>
         }
-      </div>
+
+        <!-- Transition Duration -->
+        <div class="flex flex-col gap-2 border-t border-white/5 pt-4 mt-2">
+           <span class="text-sm font-medium text-neutral-400">{{ lang() === 'vi' ? 'Thời gian chuyển cảnh' : 'Transition Duration' }}</span>
+           <select [value]="transitionDuration()" 
+                   (change)="onTransitionDurationChange($event)"
+                   class="w-full bg-neutral-950 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer">
+             <option [value]="0.5" [selected]="transitionDuration() === 0.5">0.5s</option>
+             <option [value]="1" [selected]="transitionDuration() === 1">1.0s</option>
+             <option [value]="2" [selected]="transitionDuration() === 2">2.0s</option>
+           </select>
+        </div>
+      </fieldset>
 
       <!-- Action Button -->
       <button 
@@ -118,11 +130,13 @@ export class ExportPanel {
   outputFormat = input<string>('webm');
   audioBitrate = input<number>(192000);
   videoBitrate = input<number>(0);
+  transitionDuration = input<number>(1);
 
   volumeChanged = output<number>();
   outputFormatChanged = output<string>();
   audioBitrateChanged = output<number>();
   videoBitrateChanged = output<number>();
+  transitionDurationChanged = output<number>();
   exportVideo = output<void>();
 
   onVolumeInput(event: Event) {
@@ -150,6 +164,13 @@ export class ExportPanel {
     const selectElement = event.target as HTMLSelectElement;
     if (selectElement) {
       this.videoBitrateChanged.emit(Number(selectElement.value));
+    }
+  }
+
+  onTransitionDurationChange(event: Event) {
+    const selectElement = event.target as HTMLSelectElement;
+    if (selectElement) {
+      this.transitionDurationChanged.emit(Number(selectElement.value));
     }
   }
 }

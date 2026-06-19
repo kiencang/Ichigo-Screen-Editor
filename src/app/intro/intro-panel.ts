@@ -15,6 +15,8 @@ import { AudioGenerator } from "../audio/audio-generator";
       <div
         class="flex items-center justify-between cursor-pointer group"
         (click)="toggleExpanded()"
+        (keydown.enter)="toggleExpanded()"
+        tabindex="0"
       >
         <div class="flex items-center gap-2">
           <mat-icon
@@ -39,6 +41,8 @@ import { AudioGenerator } from "../audio/audio-generator";
           <label
             class="relative inline-flex items-center cursor-pointer"
             (click)="$event.stopPropagation()"
+            (keydown.enter)="$event.stopPropagation()"
+            tabindex="0"
           >
             <input
               type="checkbox"
@@ -81,10 +85,12 @@ import { AudioGenerator } from "../audio/audio-generator";
             <!-- Title -->
             <div class="flex flex-col gap-1.5">
               <label
+                for="intro-title"
                 class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider"
                 >{{ isVi ? "Tiêu đề" : "Title" }}</label
               >
               <input
+                id="intro-title"
                 type="text"
                 [ngModel]="settings().title"
                 (ngModelChange)="updateSetting('title', $event)"
@@ -95,10 +101,12 @@ import { AudioGenerator } from "../audio/audio-generator";
             <!-- Subtitle -->
             <div class="flex flex-col gap-1.5">
               <label
+                for="intro-subtitle"
                 class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider"
                 >{{ isVi ? "Mô tả ngắn" : "Subtitle" }}</label
               >
               <input
+                id="intro-subtitle"
                 type="text"
                 [ngModel]="settings().subtitle"
                 (ngModelChange)="updateSetting('subtitle', $event)"
@@ -110,10 +118,12 @@ import { AudioGenerator } from "../audio/audio-generator";
             <div class="grid grid-cols-2 gap-3">
               <div class="flex flex-col gap-1.5">
                 <label
+                  for="intro-font"
                   class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider"
                   >Font</label
                 >
                 <select
+                  id="intro-font"
                   [ngModel]="settings().fontFamily"
                   (ngModelChange)="updateSetting('fontFamily', $event)"
                   class="w-full bg-neutral-950 border border-white/5 rounded block text-xs px-2 py-1.5 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
@@ -128,10 +138,12 @@ import { AudioGenerator } from "../audio/audio-generator";
 
               <div class="flex flex-col gap-1.5">
                 <label
+                  for="intro-duration"
                   class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider"
                   >{{ isVi ? "Thời gian (s)" : "Duration (s)" }}</label
                 >
                 <input
+                  id="intro-duration"
                   type="number"
                   min="1"
                   max="10"
@@ -147,11 +159,13 @@ import { AudioGenerator } from "../audio/audio-generator";
             <div class="grid grid-cols-2 gap-3">
               <div class="flex flex-col gap-1.5">
                 <label
+                  for="intro-bgcolor"
                   class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider"
                   >{{ isVi ? "Màu nền" : "Background" }}</label
                 >
                 <div class="flex items-center gap-2">
                   <input
+                    id="intro-bgcolor"
                     type="color"
                     [ngModel]="settings().bgColor"
                     (ngModelChange)="updateSetting('bgColor', $event)"
@@ -165,11 +179,13 @@ import { AudioGenerator } from "../audio/audio-generator";
 
               <div class="flex flex-col gap-1.5">
                 <label
+                  for="intro-textcolor"
                   class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider"
                   >{{ isVi ? "Màu chữ" : "Text Color" }}</label
                 >
                 <div class="flex items-center gap-2">
                   <input
+                    id="intro-textcolor"
                     type="color"
                     [ngModel]="settings().textColor"
                     (ngModelChange)="updateSetting('textColor', $event)"
@@ -187,12 +203,14 @@ import { AudioGenerator } from "../audio/audio-generator";
               class="flex flex-col gap-1.5 border-t border-white/5 pt-3 mt-1"
             >
               <label
+                for="intro-audio"
                 class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider flex items-center justify-between"
               >
                 <span>{{ isVi ? "Âm thanh Intro" : "Intro Audio" }}</span>
               </label>
 
               <select
+                id="intro-audio"
                 [ngModel]="settings().audioType || 'none'"
                 (ngModelChange)="onAudioTypeSelected($event)"
                 class="w-full bg-neutral-950 border border-white/5 rounded block text-xs px-2 py-1.5 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
@@ -321,7 +339,7 @@ export class IntroPanelComponent {
     }
   }
 
-  updateSetting(key: keyof IntroSettings, value: any) {
+  updateSetting<K extends keyof IntroSettings>(key: K, value: IntroSettings[K]) {
     this.settingsChanged.emit({
       ...this.settings(),
       [key]: value,
@@ -357,7 +375,7 @@ export class IntroPanelComponent {
         audioFile: null,
       });
     } else {
-      this.generateAudioForType(type as any, this.settings().duration);
+      this.generateAudioForType(type as 'swoosh' | 'digital-spark' | 'ambient-bell', this.settings().duration);
     }
   }
 
@@ -375,8 +393,9 @@ export class IntroPanelComponent {
     });
   }
 
-  onAudioSelected(event: any) {
-    const file = event.target.files[0] as File;
+  onAudioSelected(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
       this.settingsChanged.emit({
@@ -386,7 +405,9 @@ export class IntroPanelComponent {
         audioUrl: url,
       });
     }
-    event.target.value = "";
+    if (target) {
+      target.value = "";
+    }
   }
 
   removeCustomAudio() {

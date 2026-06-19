@@ -64,6 +64,14 @@
             (seeked)="onTimeUpdate()"
           ></video>
 
+          <!-- Automatic Transition Black Overlay with 0.5s transition comfort (0.25s fade-out, 0.25s fade-in) -->
+          @if (transitionFadeOpacity() > 0) {
+          <div
+            class="absolute inset-0 bg-black pointer-events-none z-[5] transition-opacity duration-75"
+            [style.opacity]="transitionFadeOpacity()"
+          ></div>
+          }
+
           <!-- Drawing Canvas overlaid exactly on top of video -->
           <div
             #canvasEl
@@ -772,8 +780,17 @@
         />
       </div>
 
+      @if (isProcessing()) {
+      <!-- Global disabled overlay -->
+      <div class="fixed inset-0 z-50 cursor-wait"></div>
+      }
+
       <!-- Export Panel -->
       <app-export-panel
+        class="block"
+        [class.relative]="isProcessing()"
+        [class.z-[60]]="isProcessing()"
+        [class.pointer-events-none]="false"
         [lang]="lang()"
         [translations]="translations()"
         [isLoaded]="isLoaded()"
@@ -785,10 +802,12 @@
         [outputFormat]="outputFormat()"
         [audioBitrate]="audioBitrate()"
         [videoBitrate]="videoBitrate()"
+        [transitionDuration]="transitionDuration()"
         (volumeChanged)="setVideoVolume($event)"
         (outputFormatChanged)="outputFormat.set($event)"
         (audioBitrateChanged)="audioBitrate.set($event)"
         (videoBitrateChanged)="videoBitrate.set($event)"
+        (transitionDurationChanged)="transitionDuration.set($event)"
         (exportVideo)="exportVideo()"
       />
     </div>

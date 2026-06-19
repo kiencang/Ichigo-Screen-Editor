@@ -3,6 +3,7 @@ import { Stroke, drawStrokesOnContext } from "../canvas/stroke.types";
 import { AppliedFilter, getAppliedFiltersCSSAtTime } from "../filters/filters.types";
 import { VideoSegment } from "../segments/segments";
 import { ZoomRegion, getZoomAtTime } from "../zoom/zoom.types";
+import { IntroSettings } from "../intro/intro.types";
 
 export interface VideoExportConfig {
   videoUrl: string;
@@ -31,7 +32,8 @@ export interface VideoExportConfig {
   logoSize: number;
   appliedFilters?: AppliedFilter[];
   zoomRegions?: ZoomRegion[];
-  introSettings?: any;
+  introSettings?: IntroSettings;
+  transitionDuration?: number;
   canvasElement: HTMLCanvasElement;
   strokes: Stroke[];
   translations: {
@@ -186,10 +188,12 @@ export class VideoExporter {
 
       // Original video audio track
       let videoSource: MediaElementAudioSourceNode | null = null;
+      let exportVideoGainNode: GainNode | null = null;
       try {
         videoSource = audioCtx.createMediaElementSource(exportVid);
         const videoGain = audioCtx.createGain();
         videoGain.gain.value = volume / 100;
+        exportVideoGainNode = videoGain;
         videoSource.connect(videoGain);
         videoGain.connect(dest);
 
@@ -213,6 +217,7 @@ export class VideoExporter {
         end: number;
         finished: boolean;
         trackTrimStart: number;
+        gainNode?: GainNode;
       }[] = [];
       if (audioTracks && audioTracks.length > 0) {
         let accumulated = 0;
@@ -239,6 +244,7 @@ export class VideoExporter {
               end: accumulated + activeDuration,
               finished: false,
               trackTrimStart: track.trimStart,
+              gainNode: bgGain,
             });
             accumulated += activeDuration;
             hasAudioNode = true;
@@ -345,8 +351,8 @@ export class VideoExporter {
       let completedDuration = 0;
 
       let isRenderingIntro = introSettings?.enabled || false;
-      let introStartTime = performance.now();
-      const introDurationSeconds = isRenderingIntro
+      const introStartTime = performance.now();
+      const introDurationSeconds = isRenderingIntro && introSettings
         ? introSettings.duration
         : 0;
 
@@ -383,7 +389,7 @@ export class VideoExporter {
       let isSeekingSegment = false;
 
       const renderLoop = () => {
-        if (isRenderingIntro) {
+        if (isRenderingIntro && introSettings) {
           const elapsed = (performance.now() - introStartTime) / 1000;
           if (elapsed < introDurationSeconds) {
             const w = canvas.width;
@@ -446,6 +452,31 @@ export class VideoExporter {
           return;
         }
 
+        // 1. Calculate transition fade opacity for exported frame
+        let transitionFadeOpacity = 0;
+        if (videoSegments.length > 1) {
+          const seg = videoSegments[currentSegIndex];
+          const segDuration = seg.end - seg.start;
+          const userTransitionDuration = config.transitionDuration ?? 1;
+          const activeFadeDuration = Math.min(userTransitionDuration / 2, segDuration / 2);
+
+          if (currentSegIndex > 0 && exportVid.currentTime < seg.start + activeFadeDuration) {
+            const progress = (exportVid.currentTime - seg.start) / activeFadeDuration;
+            transitionFadeOpacity = Math.max(0, Math.min(1, 1 - progress));
+          } else if (currentSegIndex < videoSegments.length - 1 && exportVid.currentTime > seg.end - activeFadeDuration) {
+            const progress = (seg.end - exportVid.currentTime) / activeFadeDuration;
+            transitionFadeOpacity = Math.max(0, Math.min(1, 1 - progress));
+          }
+        }
+
+        // 2. Adjust volume of primary video element dynamically
+        const currentVideoVolume = (volume / 100) * (1 - transitionFadeOpacity);
+        if (exportVideoGainNode) {
+          exportVideoGainNode.gain.value = Math.max(0, Math.min(1.0, currentVideoVolume));
+        } else {
+          exportVid.volume = Math.max(0, Math.min(1.0, currentVideoVolume));
+        }
+
         // Draw video frame with optional zoom & pan (Dynamic Focus)
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -480,12 +511,30 @@ export class VideoExporter {
 
         ctx.restore();
 
-        // Manage background audio files relative to virtual time
+        // 3. Draw visual transition overlay (fade out to black and fade in from black)
+        if (transitionFadeOpacity > 0) {
+          ctx.save();
+          ctx.fillStyle = "black";
+          ctx.globalAlpha = transitionFadeOpacity;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.restore();
+        }
+
+        // Manage background audio files relative to virtual time with volume fading
         const vidTime =
           completedDuration +
           Math.max(0, exportVid.currentTime - currentSeg.start);
         for (const bg of bgAudioElements) {
           if (vidTime >= bg.start && vidTime < bg.end) {
+            // Adjust volume of background audio element based on transition fade
+            const matchingTrack = audioTracks.find(t => t.url === bg.el.src) || { volume: 25 };
+            const bgTrackVolume = (matchingTrack.volume / 100) * (1 - transitionFadeOpacity);
+            if (bg.gainNode) {
+              bg.gainNode.gain.value = Math.max(0, Math.min(1.0, bgTrackVolume));
+            } else {
+              bg.el.volume = Math.max(0, Math.min(1.0, bgTrackVolume));
+            }
+
             if (bg.el.paused && !bg.finished) {
               const targetTime = bg.trackTrimStart + (vidTime - bg.start);
               if (Math.abs(bg.el.currentTime - targetTime) > 0.3) {
