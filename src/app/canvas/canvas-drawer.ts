@@ -4,6 +4,7 @@ import { Stroke } from "./stroke.types";
 import { EditorStateService } from "../core/editor-state.service";
 import { VideoSegments } from "../segments/video-segments";
 import { IntroSettings } from "../intro/intro.types";
+import { drawIntroOnContext } from "./intro-drawer";
 import Konva from "konva";
 
 @Injectable({
@@ -231,67 +232,24 @@ export class CanvasDrawer {
       const origW = this.width || 800;
       const origH = this.height || 450;
 
-      // Background rect
-      const bgNode = new Konva.Rect({
+      const introShape = new Konva.Shape({
         x: 0,
         y: 0,
         width: origW,
         height: origH,
-        fill: intro.settings.bgColor,
+        sceneFunc: (context, shape) => {
+          // Konva passes its own Context wrapper, we need the raw CanvasRenderingContext2D
+          const ctx = context._context;
+          
+          // The drawIntroOnContext expects a raw canvas API, so we use it directly:
+          drawIntroOnContext(ctx, intro.settings, intro.elapsed, origW, origH);
+          
+          // Konva requires this to ensure hit regions are matched (not strictly needed for intro but good practice)
+          context.fillStrokeShape(shape);
+        }
       });
-      this.layer.add(bgNode);
-
-      // Entry & Exit animations
-      const transitionDuration = 0.8;
-      const duration = intro.settings.duration;
-      let opacity = 1;
-      if (intro.elapsed < transitionDuration) {
-        opacity = intro.elapsed / transitionDuration;
-      } else if (intro.elapsed > duration - transitionDuration) {
-        opacity = Math.max(0, (duration - intro.elapsed) / transitionDuration);
-      }
-
-      // Sizing properties in logical space
-      const titleSize = intro.settings.titleFontSize || 100;
-      const subtitleSize = intro.settings.subtitleFontSize || 50;
-
-      const titleY = intro.settings.subtitle
-        ? (origH / 2 - titleSize * 0.8)
-        : (origH / 2 - titleSize * 0.5);
-
-      // Title Node
-      const titleNode = new Konva.Text({
-        x: 0,
-        y: titleY,
-        width: origW,
-        text: intro.settings.title,
-        fontSize: titleSize,
-        fontFamily: intro.settings.fontFamily || "sans-serif",
-        fontStyle: "bold",
-        fill: intro.settings.textColor,
-        align: "center",
-        opacity: opacity,
-      });
-      this.layer.add(titleNode);
-
-      // Subtitle Node
-      if (intro.settings.subtitle) {
-        const subtitleY = origH / 2 + titleSize * 0.4;
-        const subtitleNode = new Konva.Text({
-          x: 0,
-          y: subtitleY,
-          width: origW,
-          text: intro.settings.subtitle,
-          fontSize: subtitleSize,
-          fontFamily: intro.settings.fontFamily || "sans-serif",
-          fontStyle: "bold", // 500 equivalent
-          fill: intro.settings.textColor,
-          align: "center",
-          opacity: opacity * 0.75,
-        });
-        this.layer.add(subtitleNode);
-      }
-
+      
+      this.layer.add(introShape);
       this.stage.batchDraw();
       return;
     }

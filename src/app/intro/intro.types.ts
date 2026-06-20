@@ -1,5 +1,8 @@
+export type IntroTemplate = "minimal" | "cinematic" | "glitch" | "neon" | "typewriter";
+
 export interface IntroSettings {
   enabled: boolean;
+  template?: IntroTemplate;
   title: string;
   subtitle: string;
   fontFamily: string;
@@ -16,6 +19,7 @@ export interface IntroSettings {
 
 export const DEFAULT_INTRO_SETTINGS: IntroSettings = {
   enabled: false,
+  template: 'minimal',
   title: 'Giới thiệu',
   subtitle: 'Hướng dẫn sử dụng',
   fontFamily: 'Inter',

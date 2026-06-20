@@ -81,6 +81,70 @@ import { AudioGenerator } from "../audio/audio-generator";
             </div>
           } @else {
             <!-- Settings Form -->
+            
+            <!-- Main Configuration: Template, Font, Duration -->
+            <div class="grid grid-cols-3 gap-2 mb-2">
+              <div class="flex flex-col gap-1.5">
+                <label
+                  for="intro-template"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide truncate"
+                  title="{{ isVi ? 'Mẫu hiệu ứng' : 'Animation Template' }}"
+                >
+                  {{ isVi ? "Hiệu ứng" : "Template" }}
+                </label>
+                <select
+                  id="intro-template"
+                  [ngModel]="settings().template || 'minimal'"
+                  (ngModelChange)="updateSetting('template', $event)"
+                  class="w-full bg-neutral-950 border border-white/5 rounded block text-[11px] px-1 py-1.5 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
+                >
+                  <option value="minimal">{{ isVi ? "Tối giản" : "Minimal" }}</option>
+                  <option value="cinematic">{{ isVi ? "Điện ảnh" : "Cinematic" }}</option>
+                  <option value="glitch">{{ isVi ? "Nhiễu sóng" : "Glitch" }}</option>
+                  <option value="neon">{{ isVi ? "Neon" : "Neon" }}</option>
+                  <option value="typewriter">{{ isVi ? "Gõ chữ" : "Typewriter" }}</option>
+                </select>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label
+                  for="intro-font"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide truncate"
+                  >Font</label
+                >
+                <select
+                  id="intro-font"
+                  [ngModel]="settings().fontFamily"
+                  (ngModelChange)="updateSetting('fontFamily', $event)"
+                  class="w-full bg-neutral-950 border border-white/5 rounded block text-[11px] px-1 py-1.5 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
+                >
+                  <option value="Inter">Inter</option>
+                  <option value="Lora">Lora</option>
+                  <option value="JetBrains Mono">JetBrains Mono</option>
+                  <option value="Be Vietnam Pro">Be Vietnam Pro</option>
+                  <option value="Montserrat">Montserrat</option>
+                </select>
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label
+                  for="intro-duration"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide truncate"
+                  title="{{ isVi ? 'Thời gian (giây)' : 'Duration (s)' }}"
+                  >{{ isVi ? "Thời gian (s)" : "Duration (s)" }}</label
+                >
+                <input
+                  id="intro-duration"
+                  type="number"
+                  min="3"
+                  max="7"
+                  step="0.5"
+                  [ngModel]="settings().duration"
+                  (ngModelChange)="onDurationChanged($event)"
+                  class="w-full bg-neutral-950 border border-white/5 rounded block text-[11px] px-2 py-1.5 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
+                />
+              </div>
+            </div>
 
             <!-- Title + Title Font Size -->
             <div class="grid grid-cols-[1fr_80px] gap-3">
@@ -154,53 +218,12 @@ import { AudioGenerator } from "../audio/audio-generator";
               </div>
             </div>
 
-            <!-- Font and Duration inline -->
-            <div class="grid grid-cols-2 gap-3">
-              <div class="flex flex-col gap-1.5">
-                <label
-                  for="intro-font"
-                  class="text-[10px] text-neutral-400 font-medium tracking-wide"
-                  >Font</label
-                >
-                <select
-                  id="intro-font"
-                  [ngModel]="settings().fontFamily"
-                  (ngModelChange)="updateSetting('fontFamily', $event)"
-                  class="w-full bg-neutral-950 border border-white/5 rounded block text-xs px-2 py-1.5 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
-                >
-                  <option value="Inter">Inter</option>
-                  <option value="Roboto">Roboto</option>
-                  <option value="Roboto Slab">Roboto Slab</option>
-                  <option value="Playfair Display">Playfair Display</option>
-                  <option value="Space Grotesk">Space Grotesk</option>
-                </select>
-              </div>
-
-              <div class="flex flex-col gap-1.5">
-                <label
-                  for="intro-duration"
-                  class="text-[10px] text-neutral-400 font-medium tracking-wide"
-                  >{{ isVi ? "Thời gian (giây)" : "Duration (s)" }}</label
-                >
-                <input
-                  id="intro-duration"
-                  type="number"
-                  min="1"
-                  max="10"
-                  step="0.5"
-                  [ngModel]="settings().duration"
-                  (ngModelChange)="onDurationChanged($event)"
-                  class="w-full bg-neutral-950 border border-white/5 rounded block text-xs px-2 py-1.5 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
-                />
-              </div>
-            </div>
-
-            <!-- Colors -->
-            <div class="grid grid-cols-2 gap-3">
+            <!-- Colors and Audio -->
+            <div class="grid grid-cols-3 gap-3">
               <div class="flex flex-col gap-1.5">
                 <label
                   for="intro-bgcolor"
-                  class="text-[10px] text-neutral-400 font-medium tracking-wide"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide whitespace-nowrap"
                   >{{ isVi ? "Màu nền" : "Background" }}</label
                 >
                 <div class="flex items-center gap-2">
@@ -209,9 +232,9 @@ import { AudioGenerator } from "../audio/audio-generator";
                     type="color"
                     [ngModel]="settings().bgColor"
                     (ngModelChange)="updateSetting('bgColor', $event)"
-                    class="w-6 h-6 rounded cursor-pointer bg-transparent border-0 p-0"
+                    class="w-6 h-6 rounded cursor-pointer bg-transparent border-0 p-0 flex-shrink-0"
                   />
-                  <span class="text-xs text-neutral-300 font-mono">{{
+                  <span class="text-[10px] text-neutral-300 font-mono truncate">{{
                     settings().bgColor
                   }}</span>
                 </div>
@@ -220,7 +243,7 @@ import { AudioGenerator } from "../audio/audio-generator";
               <div class="flex flex-col gap-1.5">
                 <label
                   for="intro-textcolor"
-                  class="text-[10px] text-neutral-400 font-medium tracking-wide"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide whitespace-nowrap"
                   >{{ isVi ? "Màu chữ" : "Text Color" }}</label
                 >
                 <div class="flex items-center gap-2">
@@ -229,42 +252,39 @@ import { AudioGenerator } from "../audio/audio-generator";
                     type="color"
                     [ngModel]="settings().textColor"
                     (ngModelChange)="updateSetting('textColor', $event)"
-                    class="w-6 h-6 rounded cursor-pointer bg-transparent border-0 p-0"
+                    class="w-6 h-6 rounded cursor-pointer bg-transparent border-0 p-0 flex-shrink-0"
                   />
-                  <span class="text-xs text-neutral-300 font-mono">{{
+                  <span class="text-[10px] text-neutral-300 font-mono truncate">{{
                     settings().textColor
                   }}</span>
                 </div>
               </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label
+                  for="intro-audio"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide whitespace-nowrap"
+                >
+                  {{ isVi ? "Âm thanh" : "Audio" }}
+                </label>
+                <select
+                  id="intro-audio"
+                  [ngModel]="settings().audioType || 'none'"
+                  (ngModelChange)="onAudioTypeSelected($event)"
+                  class="w-full bg-neutral-950 border border-white/5 rounded block text-[11px] px-1 py-1 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
+                >
+                  <option value="none">{{ isVi ? "Không" : "None" }}</option>
+                  <option value="swoosh">Swoosh</option>
+                  <option value="digital-spark">Digital Spark</option>
+                  <option value="ambient-bell">Ambient Bell</option>
+                  <option value="custom">
+                    {{ isVi ? "Tệp riêng" : "Custom" }}
+                  </option>
+                </select>
+              </div>
             </div>
 
-            <!-- Intro Audio Selection -->
-            <div
-              class="flex flex-col gap-1.5 border-t border-white/5 pt-3 mt-1"
-            >
-              <label
-                for="intro-audio"
-                class="text-[10px] text-neutral-400 font-medium tracking-wide flex items-center justify-between"
-              >
-                <span>{{ isVi ? "Âm thanh intro" : "Intro audio" }}</span>
-              </label>
-
-              <select
-                id="intro-audio"
-                [ngModel]="settings().audioType || 'none'"
-                (ngModelChange)="onAudioTypeSelected($event)"
-                class="w-full bg-neutral-950 border border-white/5 rounded block text-xs px-2 py-1.5 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
-              >
-                <option value="none">{{ isVi ? "Không nhạc" : "None" }}</option>
-                <option value="swoosh">Swoosh</option>
-                <option value="digital-spark">Digital Spark</option>
-                <option value="ambient-bell">Ambient Bell</option>
-                <option value="custom">
-                  {{ isVi ? "Tải lên tệp riêng..." : "Upload custom..." }}
-                </option>
-              </select>
-
-              @if (settings().audioType === "custom") {
+            @if (settings().audioType === "custom") {
                 @if (!settings().audioFile) {
                   <label
                     for="intro-audio-upload"
@@ -338,7 +358,6 @@ import { AudioGenerator } from "../audio/audio-generator";
                   >
                 </div>
               }
-            </div>
 
             <button
               class="mt-2 w-full py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 transition-colors border border-white/10 text-xs font-medium text-neutral-300 flex items-center justify-center gap-1"
@@ -387,12 +406,16 @@ export class IntroPanelComponent {
   }
 
   onDurationChanged(duration: number) {
+    let clampedDuration = duration;
+    if (typeof clampedDuration !== 'number' || isNaN(clampedDuration)) clampedDuration = 3;
+    clampedDuration = Math.max(3, Math.min(7, clampedDuration));
+
     const st = this.settings();
     if (st.audioType && st.audioType !== "none" && st.audioType !== "custom") {
       // regenerate synthetic audio if duration changes
-      this.generateAudioForType(st.audioType, duration);
+      this.generateAudioForType(st.audioType, clampedDuration);
     } else {
-      this.updateSetting("duration", duration);
+      this.updateSetting("duration", clampedDuration);
     }
   }
 
