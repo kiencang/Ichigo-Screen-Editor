@@ -36,9 +36,10 @@ export function drawIntroOnContext(
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  // Font selection
-  const mainFontSize = Math.round(h * 0.08);
-  const subFontSize = Math.round(h * 0.04);
+  // Font selection (scaled to match 450px base layout)
+  const baseScale = h / 450;
+  const mainFontSize = Math.round((settings.titleFontSize || 100) * baseScale);
+  const subFontSize = Math.round((settings.subtitleFontSize || 50) * baseScale);
 
   if (settings.title) {
     ctx.font = `bold ${mainFontSize}px "${settings.fontFamily}", sans-serif`;

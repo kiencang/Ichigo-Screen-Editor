@@ -208,8 +208,8 @@ export class App {
       this.logs.update((l) => [
         ...l,
         this.lang() === "vi"
-          ? `[Thu phóng] Đã thêm vùng thu phóng 2.0x tại ${current.toFixed(2)}s hiển thị trong ${newZoom.duration.toFixed(1)}s`
-          : `[Zoom & Pan] Added 2.0x zoom region at ${current.toFixed(2)}s for ${newZoom.duration.toFixed(1)}s`,
+          ? `[Thu phóng] Đã thêm vùng thu phóng tại ${current.toFixed(2)}s hiển thị trong ${newZoom.duration.toFixed(1)}s`
+          : `[Zoom & Pan] Added zoom region at ${current.toFixed(2)}s for ${newZoom.duration.toFixed(1)}s`,
       ]);
     }
   }
@@ -247,19 +247,19 @@ export class App {
   }
 
   getZoomQuadrantIcon(panX: number, panY: number): string {
-    if (panX === 25 && panY === 25) return "north_west";
-    if (panX === 75 && panY === 25) return "north_east";
-    if (panX === 25 && panY === 75) return "south_west";
-    if (panX === 75 && panY === 75) return "south_east";
-    return "zoom_in";
+    if (panX === 0 && panY === 0) return "north_west";
+    if (panX === 100 && panY === 0) return "north_east";
+    if (panX === 0 && panY === 100) return "south_west";
+    if (panX === 100 && panY === 100) return "south_east";
+    return "center_focus_strong";
   }
 
   getZoomQuadrantLabelShort(panX: number, panY: number): string {
     const isVi = this.lang() === "vi";
-    if (panX === 25 && panY === 25) return isVi ? "Trên - Trái" : "Top Left";
-    if (panX === 75 && panY === 25) return isVi ? "Trên - Phải" : "Top Right";
-    if (panX === 25 && panY === 75) return isVi ? "Dưới - Trái" : "Btm Left";
-    if (panX === 75 && panY === 75) return isVi ? "Dưới - Phải" : "Btm Right";
+    if (panX === 0 && panY === 0) return isVi ? "Trên - trái" : "Top left";
+    if (panX === 100 && panY === 0) return isVi ? "Trên - phải" : "Top right";
+    if (panX === 0 && panY === 100) return isVi ? "Dưới - trái" : "Btm left";
+    if (panX === 100 && panY === 100) return isVi ? "Dưới - phải" : "Btm right";
     return isVi ? "Trung tâm" : "Center";
   }
 

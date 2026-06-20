@@ -59,7 +59,7 @@ import { AppTranslations } from '../core/translations';
              <select [value]="videoBitrate()" 
                      (change)="onVideoBitrateChange($event)"
                      class="w-full bg-neutral-950 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer">
-               <option [value]="0" [selected]="videoBitrate() === 0">{{ lang() === 'vi' ? 'Tự động (Khuyên dùng)' : 'Auto-detected (Recommended)' }}</option>
+               <option [value]="0" [selected]="videoBitrate() === 0">{{ lang() === 'vi' ? 'Tự động (khuyên dùng)' : 'Auto-detected (recommended)' }}</option>
                <option [value]="2000000" [selected]="videoBitrate() === 2000000">2 Mbps</option>
                <option [value]="4000000" [selected]="videoBitrate() === 4000000">4 Mbps</option>
                <option [value]="8000000" [selected]="videoBitrate() === 8000000">8 Mbps</option>
@@ -69,7 +69,7 @@ import { AppTranslations } from '../core/translations';
 
         <!-- Transition Duration -->
         <div class="flex flex-col gap-2 border-t border-white/5 pt-4 mt-2">
-           <span class="text-sm font-medium text-neutral-400">{{ lang() === 'vi' ? 'Thời gian chuyển cảnh' : 'Transition Duration' }}</span>
+           <span class="text-sm font-medium text-neutral-400">{{ lang() === 'vi' ? 'Thời gian chuyển cảnh' : 'Transition duration' }}</span>
            <select [value]="transitionDuration()" 
                    (change)="onTransitionDurationChange($event)"
                    class="w-full bg-neutral-950 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500/50 appearance-none cursor-pointer">

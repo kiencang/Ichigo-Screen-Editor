@@ -208,7 +208,7 @@ import { ZoomRegion } from "./zoom.types";
                   <!-- 4-Quadrant Visual Focus Area Grid Selector -->
                   <div class="flex flex-col gap-2 border-t border-white/5 pt-3">
                     <span
-                      class="text-[10px] font-semibold text-neutral-400 uppercase tracking-wide"
+                      class="text-[10px] font-semibold text-neutral-400 tracking-wide"
                     >
                       {{
                         lang() === "vi"
@@ -246,9 +246,9 @@ import { ZoomRegion } from "./zoom.types";
                           >north_west</mat-icon
                         >
                         <span
-                          class="text-[9px] font-semibold tracking-wide uppercase"
+                          class="text-[9px] font-semibold tracking-wide"
                           >{{
-                            lang() === "vi" ? "Trên - Trái" : "Top Left"
+                            lang() === "vi" ? "Trên - trái" : "Top left"
                           }}</span
                         >
                       </button>
@@ -279,9 +279,9 @@ import { ZoomRegion } from "./zoom.types";
                           >north_east</mat-icon
                         >
                         <span
-                          class="text-[9px] font-semibold tracking-wide uppercase"
+                          class="text-[9px] font-semibold tracking-wide"
                           >{{
-                            lang() === "vi" ? "Trên - Phải" : "Top Right"
+                            lang() === "vi" ? "Trên - phải" : "Top right"
                           }}</span
                         >
                       </button>
@@ -312,9 +312,9 @@ import { ZoomRegion } from "./zoom.types";
                           >south_west</mat-icon
                         >
                         <span
-                          class="text-[9px] font-semibold tracking-wide uppercase"
+                          class="text-[9px] font-semibold tracking-wide"
                           >{{
-                            lang() === "vi" ? "Dưới - Trái" : "Btm Left"
+                            lang() === "vi" ? "Dưới - trái" : "Btm left"
                           }}</span
                         >
                       </button>
@@ -345,9 +345,9 @@ import { ZoomRegion } from "./zoom.types";
                           >south_east</mat-icon
                         >
                         <span
-                          class="text-[9px] font-semibold tracking-wide uppercase"
+                          class="text-[9px] font-semibold tracking-wide"
                           >{{
-                            lang() === "vi" ? "Dưới - Phải" : "Btm Right"
+                            lang() === "vi" ? "Dưới - phải" : "Btm right"
                           }}</span
                         >
                       </button>
@@ -427,10 +427,10 @@ export class AppZoomRegionsList {
 
   getQuadrantLabel(panX: number, panY: number): string {
     const isVi = this.lang() === "vi";
-    if (panX === 0 && panY === 0) return isVi ? "Trên - Trái" : "Top Left";
-    if (panX === 100 && panY === 0) return isVi ? "Trên - Phải" : "Top Right";
-    if (panX === 0 && panY === 100) return isVi ? "Dưới - Trái" : "Btm Left";
-    if (panX === 100 && panY === 100) return isVi ? "Dưới - Phải" : "Btm Right";
+    if (panX === 0 && panY === 0) return isVi ? "Trên - trái" : "Top left";
+    if (panX === 100 && panY === 0) return isVi ? "Trên - phải" : "Top right";
+    if (panX === 0 && panY === 100) return isVi ? "Dưới - trái" : "Btm left";
+    if (panX === 100 && panY === 100) return isVi ? "Dưới - phải" : "Btm right";
     return isVi ? "Trung tâm" : "Center";
   }
 

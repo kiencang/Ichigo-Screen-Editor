@@ -10,6 +10,8 @@ export interface IntroSettings {
   audioUrl: string | null;
   audioVolume: number; // 0-100
   audioType?: 'none' | 'swoosh' | 'digital-spark' | 'ambient-bell' | 'custom';
+  titleFontSize?: number;
+  subtitleFontSize?: number;
 }
 
 export const DEFAULT_INTRO_SETTINGS: IntroSettings = {
@@ -24,4 +26,6 @@ export const DEFAULT_INTRO_SETTINGS: IntroSettings = {
   audioUrl: null,
   audioVolume: 100,
   audioType: 'none',
+  titleFontSize: 100,
+  subtitleFontSize: 50,
 };

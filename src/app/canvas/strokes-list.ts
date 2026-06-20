@@ -12,9 +12,9 @@ import { StrokePropertiesPanel } from './stroke-properties-panel';
     @if (strokes().length > 0) {
       <div class="p-5 rounded-2xl bg-neutral-900 border border-white/5 flex flex-col gap-4">
         <div class="flex items-center justify-between border-b border-white/10 pb-3">
-          <span class="text-xs font-semibold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
+          <span class="text-xs font-semibold text-neutral-300 tracking-wider flex items-center gap-2">
             <mat-icon class="text-red-400" style="font-size: 16px; width: 16px; height: 16px;">layers</mat-icon>
-            {{ lang() === 'vi' ? 'Danh sách chú thích & Dòng thời gian' : 'Annotation Layers & Timeline' }}
+            {{ lang() === 'vi' ? 'Danh sách chú thích & dòng thời gian' : 'Annotation layers & timeline' }}
           </span>
           <span class="text-[10px] bg-neutral-800 text-neutral-400 font-mono font-medium px-2 py-0.5 rounded-full">
             {{ strokes().length }} {{ lang() === 'vi' ? 'mục' : 'items' }}

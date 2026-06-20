@@ -10,7 +10,7 @@ import { AudioGenerator } from "../audio/audio-generator";
   standalone: true,
   imports: [CommonModule, FormsModule, MatIconModule],
   template: `
-    <div class="px-4 py-3 border-b border-white/5 relative">
+    <div class="p-5 rounded-2xl bg-neutral-900 border border-white/5 relative flex flex-col gap-4">
       <!-- Toggle Header -->
       <div
         class="flex items-center justify-between cursor-pointer group"
@@ -23,16 +23,16 @@ import { AudioGenerator } from "../audio/audio-generator";
             [class.text-emerald-400]="settings().enabled"
             [class.text-neutral-500]="!settings().enabled"
             class="transition-colors"
-            style="font-size: 18px; width: 18px; height: 18px"
+            style="font-size: 20px; width: 20px; height: 20px"
           >
             smart_display
           </mat-icon>
           <span
-            class="text-xs font-semibold uppercase tracking-wider"
+            class="text-sm font-semibold tracking-wide"
             [class.text-emerald-400]="settings().enabled"
-            [class.text-neutral-400]="!settings().enabled"
+            [class.text-neutral-300]="!settings().enabled"
           >
-            {{ isVi ? "Intro Video" : "Video Intro" }}
+            {{ isVi ? "Intro video" : "Video intro" }}
           </span>
         </div>
 
@@ -82,36 +82,76 @@ import { AudioGenerator } from "../audio/audio-generator";
           } @else {
             <!-- Settings Form -->
 
-            <!-- Title -->
-            <div class="flex flex-col gap-1.5">
-              <label
-                for="intro-title"
-                class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider"
-                >{{ isVi ? "Tiêu đề" : "Title" }}</label
-              >
-              <input
-                id="intro-title"
-                type="text"
-                [ngModel]="settings().title"
-                (ngModelChange)="updateSetting('title', $event)"
-                class="w-full bg-neutral-950 border border-white/5 rounded block text-xs px-2 py-1.5 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
-              />
+            <!-- Title + Title Font Size -->
+            <div class="grid grid-cols-[1fr_80px] gap-3">
+              <div class="flex flex-col gap-1.5">
+                <label
+                  for="intro-title"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide"
+                  >{{ isVi ? "Tiêu đề" : "Title" }}</label
+                >
+                <input
+                  id="intro-title"
+                  type="text"
+                  [ngModel]="settings().title"
+                  (ngModelChange)="updateSetting('title', $event)"
+                  class="w-full bg-neutral-950 border border-white/5 rounded block text-xs px-2 py-1.5 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
+                />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label
+                  for="intro-title-size"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide text-right"
+                  >{{ isVi ? "Cỡ chữ (px)" : "Size (px)" }}</label
+                >
+                <input
+                  id="intro-title-size"
+                  type="number"
+                  min="12"
+                  max="120"
+                  step="1"
+                  [ngModel]="settings().titleFontSize || 100"
+                  (ngModelChange)="updateSetting('titleFontSize', $event)"
+                  class="w-full bg-neutral-950 border border-white/5 rounded block text-xs px-2 py-1.5 text-center focus:outline-none focus:border-emerald-500/50 text-neutral-200"
+                />
+              </div>
             </div>
 
-            <!-- Subtitle -->
-            <div class="flex flex-col gap-1.5">
-              <label
-                for="intro-subtitle"
-                class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider"
-                >{{ isVi ? "Mô tả ngắn" : "Subtitle" }}</label
-              >
-              <input
-                id="intro-subtitle"
-                type="text"
-                [ngModel]="settings().subtitle"
-                (ngModelChange)="updateSetting('subtitle', $event)"
-                class="w-full bg-neutral-950 border border-white/5 rounded block text-xs px-2 py-1.5 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
-              />
+            <!-- Subtitle + Subtitle Font Size -->
+            <div class="grid grid-cols-[1fr_80px] gap-3">
+              <div class="flex flex-col gap-1.5">
+                <label
+                  for="intro-subtitle"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide"
+                  >{{ isVi ? "Mô tả ngắn" : "Subtitle" }}</label
+                >
+                <input
+                  id="intro-subtitle"
+                  type="text"
+                  [ngModel]="settings().subtitle"
+                  (ngModelChange)="updateSetting('subtitle', $event)"
+                  class="w-full bg-neutral-950 border border-white/5 rounded block text-xs px-2 py-1.5 focus:outline-none focus:border-emerald-500/50 text-neutral-200"
+                />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <label
+                  for="intro-subtitle-size"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide text-right"
+                  >{{ isVi ? "Cỡ chữ (px)" : "Size (px)" }}</label
+                >
+                <input
+                  id="intro-subtitle-size"
+                  type="number"
+                  min="8"
+                  max="80"
+                  step="1"
+                  [ngModel]="settings().subtitleFontSize || 50"
+                  (ngModelChange)="updateSetting('subtitleFontSize', $event)"
+                  class="w-full bg-neutral-950 border border-white/5 rounded block text-xs px-2 py-1.5 text-center focus:outline-none focus:border-emerald-500/50 text-neutral-200"
+                />
+              </div>
             </div>
 
             <!-- Font and Duration inline -->
@@ -119,7 +159,7 @@ import { AudioGenerator } from "../audio/audio-generator";
               <div class="flex flex-col gap-1.5">
                 <label
                   for="intro-font"
-                  class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide"
                   >Font</label
                 >
                 <select
@@ -139,8 +179,8 @@ import { AudioGenerator } from "../audio/audio-generator";
               <div class="flex flex-col gap-1.5">
                 <label
                   for="intro-duration"
-                  class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider"
-                  >{{ isVi ? "Thời gian (s)" : "Duration (s)" }}</label
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide"
+                  >{{ isVi ? "Thời gian (giây)" : "Duration (s)" }}</label
                 >
                 <input
                   id="intro-duration"
@@ -160,7 +200,7 @@ import { AudioGenerator } from "../audio/audio-generator";
               <div class="flex flex-col gap-1.5">
                 <label
                   for="intro-bgcolor"
-                  class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide"
                   >{{ isVi ? "Màu nền" : "Background" }}</label
                 >
                 <div class="flex items-center gap-2">
@@ -180,7 +220,7 @@ import { AudioGenerator } from "../audio/audio-generator";
               <div class="flex flex-col gap-1.5">
                 <label
                   for="intro-textcolor"
-                  class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider"
+                  class="text-[10px] text-neutral-400 font-medium tracking-wide"
                   >{{ isVi ? "Màu chữ" : "Text Color" }}</label
                 >
                 <div class="flex items-center gap-2">
@@ -204,9 +244,9 @@ import { AudioGenerator } from "../audio/audio-generator";
             >
               <label
                 for="intro-audio"
-                class="text-[10px] text-neutral-400 font-medium uppercase tracking-wider flex items-center justify-between"
+                class="text-[10px] text-neutral-400 font-medium tracking-wide flex items-center justify-between"
               >
-                <span>{{ isVi ? "Âm thanh Intro" : "Intro Audio" }}</span>
+                <span>{{ isVi ? "Âm thanh intro" : "Intro audio" }}</span>
               </label>
 
               <select
@@ -307,7 +347,7 @@ import { AudioGenerator } from "../audio/audio-generator";
               <mat-icon style="font-size: 14px; width: 14px; height: 14px"
                 >play_arrow</mat-icon
               >
-              {{ isVi ? "Xem trước Intro" : "Preview Intro" }}
+              {{ isVi ? "Xem trước intro" : "Preview intro" }}
             </button>
           }
         </div>

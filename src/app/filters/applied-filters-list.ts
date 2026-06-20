@@ -13,9 +13,9 @@ import { AppTranslations } from '../core/translations';
     @if (appliedFilters().length > 0) {
       <div class="p-5 rounded-2xl bg-neutral-900 border border-white/5 flex flex-col gap-4">
         <div class="flex items-center justify-between border-b border-white/10 pb-3">
-          <span class="text-xs font-semibold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
+          <span class="text-xs font-semibold text-neutral-300 flex items-center gap-2">
             <mat-icon class="text-red-400" style="font-size: 16px; width: 16px; height: 16px;">filter_b_and_w</mat-icon>
-            {{ lang() === 'vi' ? 'Danh sách hiệu ứng màu & Dòng thời gian' : 'Video Filter Layers & Timeline' }}
+            {{ lang() === 'vi' ? 'Danh sách hiệu ứng màu & dòng thời gian' : 'Video filter layers & timeline' }}
           </span>
           <span class="text-[10px] bg-neutral-800 text-neutral-400 font-mono font-medium px-2 py-0.5 rounded-full">
             {{ appliedFilters().length }} {{ lang() === 'vi' ? 'mục' : 'items' }}
@@ -63,7 +63,7 @@ import { AppTranslations } from '../core/translations';
                   <div class="text-xs font-semibold text-neutral-250 flex items-center justify-between">
                     <span class="flex items-center gap-1.5 font-medium text-neutral-300">
                       <mat-icon class="text-red-400" style="font-size: 14px; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;">tune</mat-icon>
-                      {{ lang() === 'vi' ? 'Thiết lập hiệu ứng đang chọn' : 'Properties of Selected Video Filter' }}
+                      {{ lang() === 'vi' ? 'Thiết lập hiệu ứng đang chọn' : 'Properties of selected video filter' }}
                     </span>
                     <span class="text-[9px] bg-red-400/10 text-red-300 px-2.5 py-0.5 rounded-full font-mono font-bold uppercase tracking-wider">
                       {{ filter.presetId }}
@@ -74,7 +74,7 @@ import { AppTranslations } from '../core/translations';
                     <!-- Start time adjustment -->
                     <div class="flex flex-col gap-1.5">
                       <div class="text-[10px] font-medium text-neutral-400 flex justify-between">
-                        <span>{{ lang() === 'vi' ? 'Thời điểm xuất hiện' : 'Start Time' }}</span>
+                        <span>{{ lang() === 'vi' ? 'Thời điểm xuất hiện' : 'Start time' }}</span>
                         <span class="font-mono text-neutral-300">{{ filter.startTime.toFixed(2) }}s / {{ formatTimeShort(videoDuration()) }}</span>
                       </div>
                       <div class="flex items-center gap-2">
@@ -100,7 +100,7 @@ import { AppTranslations } from '../core/translations';
                     <!-- Duration Adjustment -->
                     <div class="flex flex-col gap-1.5">
                       <div class="text-[10px] font-medium text-neutral-400 flex justify-between">
-                        <span>{{ lang() === 'vi' ? 'Thời lượng hiển thị / giây' : 'Display Duration / sec' }}</span>
+                        <span>{{ lang() === 'vi' ? 'Thời lượng hiển thị / giây' : 'Display duration / sec' }}</span>
                         <span class="font-mono text-neutral-300">{{ filter.duration.toFixed(1) }}s / {{ formatTimeShort(videoDuration()) }}</span>
                       </div>
                       <div class="flex items-center gap-2">

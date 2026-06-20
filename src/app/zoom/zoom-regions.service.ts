@@ -24,8 +24,8 @@ export class ZoomRegionsService {
       startTime: current,
       duration: dur,
       scale: 2.0,
-      panX: 0,
-      panY: 0,
+      panX: 50,
+      panY: 50,
     };
 
     this.zoomRegions.update((zooms) => [...zooms, newZoom]);

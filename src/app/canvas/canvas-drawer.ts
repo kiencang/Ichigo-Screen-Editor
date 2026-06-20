@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Injectable, signal, computed, inject } from "@angular/core";
 import { Stroke } from "./stroke.types";
-import { drawIntroOnContext } from "./intro-drawer";
 import { EditorStateService } from "../core/editor-state.service";
 import { VideoSegments } from "../segments/video-segments";
 import { IntroSettings } from "../intro/intro.types";
@@ -144,7 +143,11 @@ export class CanvasDrawer {
     const node = shapeNode || this.layer?.findOne(`#${id}`);
     if (node) {
       node.draggable(true);
-      this.transformer.nodes([node]);
+      
+      const currentNodes = this.transformer.nodes();
+      if (currentNodes.length !== 1 || currentNodes[0] !== node) {
+        this.transformer.nodes([node]);
+      }
       
       // Re-bind transform/drag end listeners to save properties back to signal
       node.off("dragend transformend");
@@ -221,20 +224,75 @@ export class CanvasDrawer {
     this.resizeToFit();
 
     // 2. Pure 2D intro drawing handles
-    if (intro && intro.active && this.ctx) {
-      // Clear children
+    if (intro && intro.active) {
+      // Clear existing children
       this.layer.destroyChildren();
-      this.layer.batchDraw();
 
-      // Render Intro using standard context draw
-      this.ctx.clearRect(0, 0, this.stage.width(), this.stage.height());
-      drawIntroOnContext(
-        this.ctx,
-        intro.settings,
-        intro.elapsed,
-        this.stage.width(),
-        this.stage.height()
-      );
+      const origW = this.width || 800;
+      const origH = this.height || 450;
+
+      // Background rect
+      const bgNode = new Konva.Rect({
+        x: 0,
+        y: 0,
+        width: origW,
+        height: origH,
+        fill: intro.settings.bgColor,
+      });
+      this.layer.add(bgNode);
+
+      // Entry & Exit animations
+      const transitionDuration = 0.8;
+      const duration = intro.settings.duration;
+      let opacity = 1;
+      if (intro.elapsed < transitionDuration) {
+        opacity = intro.elapsed / transitionDuration;
+      } else if (intro.elapsed > duration - transitionDuration) {
+        opacity = Math.max(0, (duration - intro.elapsed) / transitionDuration);
+      }
+
+      // Sizing properties in logical space
+      const titleSize = intro.settings.titleFontSize || 100;
+      const subtitleSize = intro.settings.subtitleFontSize || 50;
+
+      const titleY = intro.settings.subtitle
+        ? (origH / 2 - titleSize * 0.8)
+        : (origH / 2 - titleSize * 0.5);
+
+      // Title Node
+      const titleNode = new Konva.Text({
+        x: 0,
+        y: titleY,
+        width: origW,
+        text: intro.settings.title,
+        fontSize: titleSize,
+        fontFamily: intro.settings.fontFamily || "sans-serif",
+        fontStyle: "bold",
+        fill: intro.settings.textColor,
+        align: "center",
+        opacity: opacity,
+      });
+      this.layer.add(titleNode);
+
+      // Subtitle Node
+      if (intro.settings.subtitle) {
+        const subtitleY = origH / 2 + titleSize * 0.4;
+        const subtitleNode = new Konva.Text({
+          x: 0,
+          y: subtitleY,
+          width: origW,
+          text: intro.settings.subtitle,
+          fontSize: subtitleSize,
+          fontFamily: intro.settings.fontFamily || "sans-serif",
+          fontStyle: "bold", // 500 equivalent
+          fill: intro.settings.textColor,
+          align: "center",
+          opacity: opacity * 0.75,
+        });
+        this.layer.add(subtitleNode);
+      }
+
+      this.stage.batchDraw();
       return;
     }
 
@@ -244,113 +302,227 @@ export class CanvasDrawer {
       return this.time >= s.startTime && this.time <= (s.startTime + s.duration);
     });
 
-    const activeNodes: any[] = [];
+    const activeStrokeIds = new Set(activeStrokesList.map((s) => s.id));
     const restoredActiveNodeId = this.activeStrokeId();
 
-    // Rebuild active shape elements in Konva
-    for (const stroke of activeStrokesList) {
-      let node: any = null;
-      const isSelected = restoredActiveNodeId === stroke.id;
-
-      if (stroke.type === "pen" && stroke.points.length > 0) {
-        node = new Konva.Line({
-          id: stroke.id,
-          stroke: stroke.color,
-          strokeWidth: stroke.lineWidth,
-          lineCap: "round",
-          lineJoin: "round",
-          points: stroke.points.flatMap((p) => [p.x, p.y]),
-          draggable: isSelected && this.currentTool() === "pointer",
-        });
-      } else if (stroke.type === "line" && stroke.startPos && stroke.endPos) {
-        node = new Konva.Line({
-          id: stroke.id,
-          stroke: stroke.color,
-          strokeWidth: stroke.lineWidth,
-          lineCap: "round",
-          points: [stroke.startPos.x, stroke.startPos.y, stroke.endPos.x, stroke.endPos.y],
-          draggable: isSelected && this.currentTool() === "pointer",
-        });
-      } else if (stroke.type === "rect" && stroke.startPos && stroke.endPos) {
-        node = new Konva.Rect({
-          id: stroke.id,
-          x: stroke.startPos.x,
-          y: stroke.startPos.y,
-          width: stroke.endPos.x - stroke.startPos.x,
-          height: stroke.endPos.y - stroke.startPos.y,
-          stroke: stroke.color,
-          strokeWidth: stroke.lineWidth,
-          draggable: isSelected && this.currentTool() === "pointer",
-        });
-      } else if (stroke.type === "circle" && stroke.startPos && stroke.endPos) {
-        const rx = Math.abs(stroke.endPos.x - stroke.startPos.x) / 2;
-        const ry = Math.abs(stroke.endPos.y - stroke.startPos.y) / 2;
-        const cx = (stroke.startPos.x + stroke.endPos.x) / 2;
-        const cy = (stroke.startPos.y + stroke.endPos.y) / 2;
-
-        node = new Konva.Ellipse({
-          id: stroke.id,
-          x: cx,
-          y: cy,
-          radiusX: rx,
-          radiusY: ry,
-          stroke: stroke.color,
-          strokeWidth: stroke.lineWidth,
-          draggable: isSelected && this.currentTool() === "pointer",
-        });
-      } else if (stroke.type === "arrow" && stroke.startPos && stroke.endPos) {
-        const baseWidth = stroke.lineWidth || 5;
-        const pointerScale = Math.max(3, baseWidth * 0.8);
-
-        node = new Konva.Arrow({
-          id: stroke.id,
-          points: [stroke.startPos.x, stroke.startPos.y, stroke.endPos.x, stroke.endPos.y],
-          pointerLength: pointerScale * 3.5,
-          pointerWidth: pointerScale * 3.5,
-          fill: stroke.color,
-          stroke: stroke.color,
-          strokeWidth: stroke.lineWidth,
-          draggable: isSelected && this.currentTool() === "pointer",
-        });
-      } else if (stroke.type === "text" && stroke.startPos) {
-        node = new Konva.Text({
-          id: stroke.id,
-          x: stroke.startPos.x,
-          y: stroke.startPos.y,
-          text: stroke.text || "Text",
-          fontSize: stroke.fontSize || 24,
-          fontStyle: "bold",
-          fontFamily: "sans-serif",
-          fill: stroke.color,
-          draggable: isSelected && this.currentTool() === "pointer",
-        });
-      }
-
-      if (node) {
-        activeNodes.push(node);
-      }
-    }
-
-    // Clear old elements from Layer (except the Transformer)
+    // Remove any existing shapes that are no longer active
     this.layer.getChildren().forEach((node) => {
-      if (node !== this.transformer) {
+      if (node !== this.transformer && !activeStrokeIds.has(node.id())) {
         node.destroy();
       }
     });
 
-    // Append newly constructed shapes in order
-    activeNodes.forEach((node) => {
-      this.layer!.add(node);
-    });
+    // Make sure transformer is on the layer and stays on top
+    if (this.transformer && !this.transformer.getParent()) {
+      this.layer.add(this.transformer);
+    }
+
+    // Process each active stroke
+    for (const stroke of activeStrokesList) {
+      const isSelected = restoredActiveNodeId === stroke.id;
+      let node: any = this.layer.findOne(`#${stroke.id}`);
+
+      // Check if this node is currently being dragged/transformed
+      const isDragging = node && node.isDragging();
+      const isTransforming = this.transformer && this.transformer.isTransforming() && isSelected;
+      const isInteracting = isDragging || isTransforming;
+
+      if (!node) {
+        // Create a new node since it doesn't exist
+        if (stroke.type === "pen" && stroke.points.length > 0) {
+          node = new Konva.Line({
+            id: stroke.id,
+            stroke: stroke.color,
+            strokeWidth: stroke.lineWidth,
+            lineCap: "round",
+            lineJoin: "round",
+            points: stroke.points.flatMap((p) => [p.x, p.y]),
+            draggable: isSelected && this.currentTool() === "pointer",
+          });
+        } else if (stroke.type === "line" && stroke.startPos && stroke.endPos) {
+          node = new Konva.Line({
+            id: stroke.id,
+            stroke: stroke.color,
+            strokeWidth: stroke.lineWidth,
+            lineCap: "round",
+            points: [stroke.startPos.x, stroke.startPos.y, stroke.endPos.x, stroke.endPos.y],
+            draggable: isSelected && this.currentTool() === "pointer",
+          });
+        } else if (stroke.type === "rect" && stroke.startPos && stroke.endPos) {
+          node = new Konva.Rect({
+            id: stroke.id,
+            x: stroke.startPos.x,
+            y: stroke.startPos.y,
+            width: stroke.endPos.x - stroke.startPos.x,
+            height: stroke.endPos.y - stroke.startPos.y,
+            stroke: stroke.color,
+            strokeWidth: stroke.lineWidth,
+            draggable: isSelected && this.currentTool() === "pointer",
+          });
+        } else if (stroke.type === "circle" && stroke.startPos && stroke.endPos) {
+          const rx = Math.abs(stroke.endPos.x - stroke.startPos.x) / 2;
+          const ry = Math.abs(stroke.endPos.y - stroke.startPos.y) / 2;
+          const cx = (stroke.startPos.x + stroke.endPos.x) / 2;
+          const cy = (stroke.startPos.y + stroke.endPos.y) / 2;
+
+          node = new Konva.Ellipse({
+            id: stroke.id,
+            x: cx,
+            y: cy,
+            radiusX: rx,
+            radiusY: ry,
+            stroke: stroke.color,
+            strokeWidth: stroke.lineWidth,
+            draggable: isSelected && this.currentTool() === "pointer",
+          });
+        } else if (stroke.type === "arrow" && stroke.startPos && stroke.endPos) {
+          const baseWidth = stroke.lineWidth || 5;
+          const pointerScale = Math.max(3, baseWidth * 0.8);
+
+          node = new Konva.Arrow({
+            id: stroke.id,
+            points: [stroke.startPos.x, stroke.startPos.y, stroke.endPos.x, stroke.endPos.y],
+            pointerLength: pointerScale * 3.5,
+            pointerWidth: pointerScale * 3.5,
+            fill: stroke.color,
+            stroke: stroke.color,
+            strokeWidth: stroke.lineWidth,
+            draggable: isSelected && this.currentTool() === "pointer",
+          });
+        } else if (stroke.type === "text" && stroke.startPos) {
+          node = new Konva.Text({
+            id: stroke.id,
+            x: stroke.startPos.x,
+            y: stroke.startPos.y,
+            text: stroke.text || "Text",
+            fontSize: stroke.fontSize || 24,
+            fontStyle: "bold",
+            fontFamily: "sans-serif",
+            fill: stroke.color,
+            draggable: isSelected && this.currentTool() === "pointer",
+          });
+        }
+
+        if (node) {
+          this.layer.add(node);
+        }
+      } else {
+        // Update drag setup of existing node
+        node.draggable(isSelected && this.currentTool() === "pointer");
+
+        if (!isInteracting) {
+          // If we are not actively interacting, sync positions and attributes cleanly from Signal state
+          if (stroke.type === "pen" && stroke.points.length > 0) {
+            node.setAttrs({
+              stroke: stroke.color,
+              strokeWidth: stroke.lineWidth,
+              points: stroke.points.flatMap((p) => [p.x, p.y]),
+              x: 0,
+              y: 0,
+              scaleX: 1,
+              scaleY: 1,
+            });
+          } else if (stroke.type === "line" && stroke.startPos && stroke.endPos) {
+            node.setAttrs({
+              stroke: stroke.color,
+              strokeWidth: stroke.lineWidth,
+              points: [stroke.startPos.x, stroke.startPos.y, stroke.endPos.x, stroke.endPos.y],
+              x: 0,
+              y: 0,
+              scaleX: 1,
+              scaleY: 1,
+            });
+          } else if (stroke.type === "rect" && stroke.startPos && stroke.endPos) {
+            node.setAttrs({
+              x: stroke.startPos.x,
+              y: stroke.startPos.y,
+              width: stroke.endPos.x - stroke.startPos.x,
+              height: stroke.endPos.y - stroke.startPos.y,
+              stroke: stroke.color,
+              strokeWidth: stroke.lineWidth,
+              scaleX: 1,
+              scaleY: 1,
+            });
+          } else if (stroke.type === "circle" && stroke.startPos && stroke.endPos) {
+            const rx = Math.abs(stroke.endPos.x - stroke.startPos.x) / 2;
+            const ry = Math.abs(stroke.endPos.y - stroke.startPos.y) / 2;
+            const cx = (stroke.startPos.x + stroke.endPos.x) / 2;
+            const cy = (stroke.startPos.y + stroke.endPos.y) / 2;
+
+            node.setAttrs({
+              x: cx,
+              y: cy,
+              radiusX: rx,
+              radiusY: ry,
+              stroke: stroke.color,
+              strokeWidth: stroke.lineWidth,
+              scaleX: 1,
+              scaleY: 1,
+            });
+          } else if (stroke.type === "arrow" && stroke.startPos && stroke.endPos) {
+            const baseWidth = stroke.lineWidth || 5;
+            const pointerScale = Math.max(3, baseWidth * 0.8);
+
+            node.setAttrs({
+              points: [stroke.startPos.x, stroke.startPos.y, stroke.endPos.x, stroke.endPos.y],
+              pointerLength: pointerScale * 3.5,
+              pointerWidth: pointerScale * 3.5,
+              fill: stroke.color,
+              stroke: stroke.color,
+              strokeWidth: stroke.lineWidth,
+              x: 0,
+              y: 0,
+              scaleX: 1,
+              scaleY: 1,
+            });
+          } else if (stroke.type === "text" && stroke.startPos) {
+            node.setAttrs({
+              x: stroke.startPos.x,
+              y: stroke.startPos.y,
+              text: stroke.text || "Text",
+              fontSize: stroke.fontSize || 24,
+              fill: stroke.color,
+              scaleX: 1,
+              scaleY: 1,
+            });
+          }
+        } else {
+          // If actively dragging/transforming, only update non-spatial details from signal to preserve active gesture state
+          if (stroke.type === "text") {
+            node.setAttrs({
+              text: stroke.text || "Text",
+              fill: stroke.color,
+            });
+          } else if (stroke.type === "arrow" || stroke.type === "pen" || stroke.type === "line") {
+            node.setAttrs({
+              stroke: stroke.color,
+              strokeWidth: stroke.lineWidth,
+              fill: stroke.type === "arrow" ? stroke.color : undefined,
+            });
+          } else {
+            node.setAttrs({
+              stroke: stroke.color,
+              strokeWidth: stroke.lineWidth,
+            });
+          }
+        }
+      }
+    }
 
     // Rebuild transformer reference
     if (this.transformer) {
-      this.layer.add(this.transformer); // Make sure it sits on top of all shapes
+      this.transformer.moveToTop(); // Keep on absolute top of layer order
+      
       if (restoredActiveNodeId && this.currentTool() === "pointer") {
         const activeNode = this.layer.findOne(`#${restoredActiveNodeId}`);
         if (activeNode) {
           activeNode.draggable(true);
-          this.transformer.nodes([activeNode]);
+          
+          const currentNodes = this.transformer.nodes();
+          if (currentNodes.length !== 1 || currentNodes[0] !== activeNode) {
+            this.transformer.nodes([activeNode]);
+          }
+          
           activeNode.off("dragend transformend");
           activeNode.on("dragend transformend", () => {
             this.syncNodeToStroke(activeNode);
@@ -516,52 +688,75 @@ export class CanvasDrawer {
     const stroke = this.strokes().find((s) => s.id === strokeId);
     if (!stroke) return;
 
-    this.strokes.update((all) =>
-      all.map((s) => {
-        if (s.id !== strokeId) return s;
+    // 1. Temporarily detached node from transformer to protect transformer from structural properties updates
+    if (this.transformer) {
+      this.transformer.nodes([]);
+    }
 
-        const updated = { ...s };
-        if (s.type === "rect") {
-          const nodeX = node.x();
-          const nodeY = node.y();
-          const nodeW = node.width() * node.scaleX();
-          const nodeH = node.height() * node.scaleY();
-          updated.startPos = { x: nodeX, y: nodeY };
-          updated.endPos = { x: nodeX + nodeW, y: nodeY + nodeH };
-        } else if (s.type === "circle") {
-          const cx = node.x();
-          const cy = node.y();
-          const ellipseNode = node as Konva.Ellipse;
-          const rx = ellipseNode.radiusX() * node.scaleX();
-          const ry = ellipseNode.radiusY() * node.scaleY();
-          updated.startPos = { x: cx - rx, y: cy - ry };
-          updated.endPos = { x: cx + rx, y: cy + ry };
-        } else if (s.type === "text") {
-          const nodeX = node.x();
-          const nodeY = node.y();
-          const textNode = node as Konva.Text;
-          const currentFontSize = textNode.fontSize() || 24;
-          const scale = node.scaleX() || 1;
-          const newFontSize = Math.max(6, Math.min(120, Math.round(currentFontSize * scale)));
-          updated.startPos = { x: nodeX, y: nodeY };
-          updated.fontSize = newFontSize;
-        } else if (s.type === "line" || s.type === "arrow") {
-          const dx = node.x();
-          const dy = node.y();
-          if (s.startPos && s.endPos) {
-            updated.startPos = { x: s.startPos.x + dx, y: s.startPos.y + dy };
-            updated.endPos = { x: s.endPos.x + dx, y: s.endPos.y + dy };
-          }
-        } else if (s.type === "pen") {
-          const dx = node.x();
-          const dy = node.y();
-          updated.points = s.points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
-        }
-        return updated;
-      })
+    const updated = { ...stroke };
+    if (stroke.type === "rect") {
+      const nodeX = node.x();
+      const nodeY = node.y();
+      const nodeW = node.width() * node.scaleX();
+      const nodeH = node.height() * node.scaleY();
+      updated.startPos = { x: nodeX, y: nodeY };
+      updated.endPos = { x: nodeX + nodeW, y: nodeY + nodeH };
+    } else if (stroke.type === "circle") {
+      const cx = node.x();
+      const cy = node.y();
+      const ellipseNode = node as Konva.Ellipse;
+      const rx = ellipseNode.radiusX() * node.scaleX();
+      const ry = ellipseNode.radiusY() * node.scaleY();
+      updated.startPos = { x: cx - rx, y: cy - ry };
+      updated.endPos = { x: cx + rx, y: cy + ry };
+    } else if (stroke.type === "text") {
+      const nodeX = node.x();
+      const nodeY = node.y();
+      const textNode = node as Konva.Text;
+      const currentFontSize = textNode.fontSize() || 24;
+      const scale = node.scaleX() || 1;
+      const newFontSize = Math.max(6, Math.min(120, Math.round(currentFontSize * scale)));
+      updated.startPos = { x: nodeX, y: nodeY };
+      updated.fontSize = newFontSize;
+    } else if (stroke.type === "line" || stroke.type === "arrow") {
+      const dx = node.x();
+      const dy = node.y();
+      if (stroke.startPos && stroke.endPos) {
+        updated.startPos = { x: stroke.startPos.x + dx, y: stroke.startPos.y + dy };
+        updated.endPos = { x: stroke.endPos.x + dx, y: stroke.endPos.y + dy };
+      }
+    } else if (stroke.type === "pen") {
+      const dx = node.x();
+      const dy = node.y();
+      updated.points = stroke.points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+    }
+
+    // 2. Reset the physical Konva node attributes (scale back to 1, apply real calculated positions)
+    // so that when activeStrokesList renders, it perfectly aligns with our state and doesn't flicker.
+    node.setAttrs({
+      x: updated.startPos?.x ?? node.x(),
+      y: updated.startPos?.y ?? node.y(),
+      scaleX: 1,
+      scaleY: 1,
+    });
+
+    // 3. Update the state signal
+    this.strokes.update((all) =>
+      all.map((s) => (s.id === strokeId ? updated : s))
     );
 
+    // 4. Force a clear canvas redraw matching the new updated state
     this.redrawCanvas();
+
+    // 5. In the next microtask, safely attach the updated node back to the transformer
+    setTimeout(() => {
+      const reselectedNode = this.layer?.findOne(`#${strokeId}`);
+      if (reselectedNode && this.transformer && this.currentTool() === "pointer" && this.activeStrokeId() === strokeId) {
+        reselectedNode.draggable(true);
+        this.transformer.nodes([reselectedNode]);
+        this.stage?.batchDraw();
+      }
+    }, 0);
   }
 
   clearCanvas() {

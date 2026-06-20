@@ -30,8 +30,8 @@ export const VIDEO_FILTERS: FilterPreset[] = [
   },
   {
     id: 'chrome',
-    nameVi: 'Vivid Chrome',
-    nameEn: 'Vivid Chrome',
+    nameVi: 'Vivid chrome',
+    nameEn: 'Vivid chrome',
     filterString: (intensity) => {
       const p = intensity / 100;
       return `saturate(${1 + p * 0.75}) contrast(${1 + p * 0.2}) brightness(${1 + p * 0.05})`;
@@ -39,17 +39,17 @@ export const VIDEO_FILTERS: FilterPreset[] = [
   },
   {
     id: 'faded',
-    nameVi: 'Faded Film',
-    nameEn: 'Faded Film',
+    nameVi: 'Faded film',
+    nameEn: 'Faded film',
     filterString: (intensity) => {
       const p = intensity / 100;
-      return `saturate(${1 - p * 0.5}) contrast(${1 - p * 0.15}) brightness(${1 + p * 0.1})`;
+      return `saturate(${1 - p * 0.5}) contrast(${1 - p * 0.15}) brightness(${1 + p * 0.15})`;
     }
   },
   {
     id: 'vintage',
-    nameVi: 'Vintage Sepia',
-    nameEn: 'Vintage Sepia',
+    nameVi: 'Vintage sepia',
+    nameEn: 'Vintage sepia',
     filterString: (intensity) => {
       const p = intensity / 100;
       return `sepia(${p * 0.65}) saturate(${1 + p * 0.15}) contrast(${1 + p * 0.1})`;
@@ -57,8 +57,8 @@ export const VIDEO_FILTERS: FilterPreset[] = [
   },
   {
     id: 'mono',
-    nameVi: 'Noir Mono',
-    nameEn: 'Noir Mono',
+    nameVi: 'Noir mono',
+    nameEn: 'Noir mono',
     filterString: (intensity) => {
       const p = intensity / 100;
       return `grayscale(${p}) contrast(${1 + p * 0.25})`;
@@ -66,8 +66,8 @@ export const VIDEO_FILTERS: FilterPreset[] = [
   },
   {
     id: 'cinematic',
-    nameVi: 'Cinematic Teal',
-    nameEn: 'Cinematic Teal',
+    nameVi: 'Cinematic teal',
+    nameEn: 'Cinematic teal',
     filterString: (intensity) => {
       const p = intensity / 100;
       return `contrast(${1 + p * 0.2}) saturate(${1 + p * 0.15}) hue-rotate(${-6 * p}deg) brightness(${1 - p * 0.05})`;
@@ -75,8 +75,8 @@ export const VIDEO_FILTERS: FilterPreset[] = [
   },
   {
     id: 'cyberpunk',
-    nameVi: 'Neon Cyberpunk',
-    nameEn: 'Neon Cyberpunk',
+    nameVi: 'Neon cyberpunk',
+    nameEn: 'Neon cyberpunk',
     filterString: (intensity) => {
       const p = intensity / 100;
       return `hue-rotate(${110 * p}deg) saturate(${1 + p * 0.4}) contrast(${1 + p * 0.1})`;
@@ -84,17 +84,17 @@ export const VIDEO_FILTERS: FilterPreset[] = [
   },
   {
     id: 'warm',
-    nameVi: 'Warm Sun',
-    nameEn: 'Warm Sun',
+    nameVi: 'Warm sun',
+    nameEn: 'Warm sun',
     filterString: (intensity) => {
-      const p = intensity / 100;
+      const p = intensity / 105;
       return `sepia(${p * 0.25}) saturate(${1 + p * 0.2}) hue-rotate(${-10 * p}deg)`;
     }
   },
   {
     id: 'cool',
-    nameVi: 'Cool Ice',
-    nameEn: 'Cool Ice',
+    nameVi: 'Cool ice',
+    nameEn: 'Cool ice',
     filterString: (intensity) => {
       const p = intensity / 100;
       return `hue-rotate(${12 * p}deg) saturate(${1 + p * 0.1}) contrast(${1 + p * 0.05}) brightness(${1 - p * 0.02})`;
@@ -102,8 +102,8 @@ export const VIDEO_FILTERS: FilterPreset[] = [
   },
   {
     id: 'sunset',
-    nameVi: 'Golden Sunset',
-    nameEn: 'Golden Sunset',
+    nameVi: 'Golden sunset',
+    nameEn: 'Golden sunset',
     filterString: (intensity) => {
       const p = intensity / 100;
       return `sepia(${p * 0.4}) saturate(${1 + p * 0.3}) contrast(${1 + p * 0.15}) hue-rotate(${-15 * p}deg) brightness(${1 + p * 0.05})`;

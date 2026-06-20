@@ -154,7 +154,7 @@
                   >content_cut</mat-icon
                 >
                 <span
-                  >{{ lang() === 'vi' ? 'Cắt Phân Đoạn' : 'Split Segment'
+                  >{{ lang() === 'vi' ? 'Cắt phân đoạn' : 'Split segment'
                   }}</span
                 >
               </button>
@@ -172,7 +172,7 @@
                   >delete</mat-icon
                 >
                 <span
-                  >{{ lang() === 'vi' ? 'Xóa Phân Đoạn' : 'Delete Segment'
+                  >{{ lang() === 'vi' ? 'Xóa phân đoạn' : 'Delete segment'
                   }}</span
                 >
               </button>
@@ -476,7 +476,7 @@
                     <span
                       class="truncate font-semibold select-none leading-none text-[9px] uppercase tracking-wide"
                     >
-                      2.0x {{ getZoomQuadrantLabelShort(zoom.panX, zoom.panY) }}
+                      {{ getZoomQuadrantLabelShort(zoom.panX, zoom.panY) }}
                     </span>
                   </div>
                   }
@@ -654,14 +654,6 @@
         [(color)]="color"
       ></app-annotation-tools>
 
-      <app-intro-panel
-        [lang]="lang()"
-        [settings]="introSettings()"
-        (settingsChanged)="introSettings.set($event)"
-        (preview)="previewIntro()"
-      >
-      </app-intro-panel>
-
       <!-- Annotation Timeline & properties panel -->
       <app-strokes-list
         [strokes]="strokes()"
@@ -678,6 +670,14 @@
         (updateStrokeFontSize)="updateStrokeFontSize($event.id, $event.value)"
       >
       </app-strokes-list>
+
+      <app-intro-panel
+        [lang]="lang()"
+        [settings]="introSettings()"
+        (settingsChanged)="introSettings.set($event)"
+        (preview)="previewIntro()"
+      >
+      </app-intro-panel>
 
       <!-- Dynamic Zoom & Focus Timeline & properties panel -->
       <app-zoom-regions-list
