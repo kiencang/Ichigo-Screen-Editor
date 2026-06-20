@@ -12,12 +12,13 @@ import { AppTranslations } from '../core/translations';
         <mat-icon class="text-3xl">upload_file</mat-icon>
       </div>
       <h2 class="text-2xl font-medium mb-2 tracking-tight">{{ translations().selectVideo }}</h2>
-      <p class="text-neutral-500 mb-8 max-w-lg text-center" [innerHTML]="translations().processDevice"></p>
+      <p class="text-neutral-500 mb-2 max-w-lg text-center" [innerHTML]="translations().processDevice"></p>
+      <p class="text-neutral-400 text-sm mb-8 max-w-lg text-center" [innerHTML]="translations().supportedFormats"></p>
       <label for="video-upload" class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl cursor-pointer transition-colors flex items-center gap-2 shadow-sm">
         <mat-icon>folder_open</mat-icon>
         {{ translations().browseFiles }}
       </label>
-      <input id="video-upload" type="file" accept="video/*" class="hidden" (change)="onFileChanged($event)">
+      <input id="video-upload" type="file" accept=".mp4,.webm,.ogg,video/mp4,video/webm,video/ogg" class="hidden" (change)="onFileChanged($event)">
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

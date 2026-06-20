@@ -90,22 +90,22 @@ import { Stroke } from './stroke.types';
           <div class="flex flex-col gap-1.5">
             <div class="text-[10px] font-medium text-neutral-400 flex justify-between">
               <span>{{ lang() === 'vi' ? 'Cỡ chữ' : 'Font Size' }}</span>
-              <span class="font-mono text-neutral-300">{{ activeStrokeItem().fontSize || 24 }}px</span>
+              <span class="font-mono text-neutral-300">{{ activeStrokeItem().fontSize || 60 }}px</span>
             </div>
             <div class="flex items-center gap-2">
               <input type="range" 
-                     [ngModel]="activeStrokeItem().fontSize || 24" 
+                     [ngModel]="activeStrokeItem().fontSize || 60" 
                      (ngModelChange)="onFontSizeChange($event)" 
                      [min]="10" 
-                     [max]="80" 
+                     [max]="200" 
                      step="1"
                      class="flex-1 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-red-500"
                      title="Font Size Slider">
               <input type="number" 
-                     [ngModel]="activeStrokeItem().fontSize || 24" 
+                     [ngModel]="activeStrokeItem().fontSize || 60" 
                      (ngModelChange)="onFontSizeChange($event)" 
-                     [min]="6" 
-                     [max]="120" 
+                     [min]="10" 
+                     [max]="200" 
                      step="1"
                      class="w-16 px-1.5 py-0.5 bg-neutral-900 border border-white/10 rounded text-neutral-200 text-center font-mono text-[11px]"
                      title="Font Size Input">

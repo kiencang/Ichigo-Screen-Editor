@@ -119,7 +119,7 @@ export function drawStrokesOnContext(
     } else if (stroke.type === 'text' && stroke.startPos) {
       const from = scalePoint(stroke.startPos);
       ctx.fillStyle = strokeColor;
-      const scoreFontSize = stroke.fontSize || 24;
+      const scoreFontSize = stroke.fontSize || 60;
       const scaledFontSize = scoreFontSize * scaleX;
       ctx.font = `bold ${scaledFontSize}px sans-serif`;
       ctx.textBaseline = 'top';

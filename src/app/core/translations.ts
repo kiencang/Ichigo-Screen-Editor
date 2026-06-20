@@ -2,6 +2,7 @@ export interface AppTranslations {
   appName: string;
   selectVideo: string;
   processDevice: string;
+  supportedFormats: string;
   browseFiles: string;
   selection: string;
   exportLength: string;
@@ -46,6 +47,7 @@ export interface AppTranslations {
   trimRange: string;
   extractingBgWaveform: string;
   errMaxSize: (maxMB: number, actualMB: string) => string;
+  errInvalidFormat: string;
   errMaxDuration: (maxMin: number, actualMin: string) => string;
   msgInitSuccess: string;
   msgFeatures: string;
@@ -69,6 +71,9 @@ export function getTranslations(lang: 'vi' | 'en'): AppTranslations {
     processDevice: isVi 
       ? 'Video của bạn được xử lý hoàn toàn trên thiết bị của bạn.<br>Chúng tôi không nhận & lưu trữ bất kỳ dữ liệu nào lên máy chủ.' 
       : 'Your video is processed entirely on your device.<br>No data is uploaded to any server.',
+    supportedFormats: isVi 
+      ? 'Hỗ trợ định dạng: <strong>MP4, WebM, Ogg</strong><br><span class="text-xs">(Hoạt động tốt nhất trên trình duyệt Chrome hoặc Edge trên hệ điều hành Windows)</span>'
+      : 'Supported formats: <strong>MP4, WebM, Ogg</strong><br><span class="text-xs">(Best performance on Chrome or Edge browser on Windows)</span>',
     browseFiles: isVi ? 'Duyệt tệp tin' : 'Browse files',
     selection: isVi ? 'Vùng chọn:' : 'Selection:',
     exportLength: isVi ? 'Độ dài xuất:' : 'Export duration:',
@@ -115,6 +120,9 @@ export function getTranslations(lang: 'vi' | 'en'): AppTranslations {
     errMaxSize: (maxMB: number, actualMB: string) => isVi 
       ? `Dung lượng video vượt quá giới hạn cho phép (Tối đa ${maxMB}MB. Tệp tin của bạn: ${actualMB}MB).` 
       : `Video file size exceeds the allowed limit (Maximum ${maxMB}MB. Your file: ${actualMB}MB).`,
+    errInvalidFormat: isVi 
+      ? `Định dạng tệp không được hỗ trợ. Vui lòng chọn tệp MP4, WebM hoặc Ogg.` 
+      : `Unsupported file format. Please select an MP4, WebM, or Ogg file.`,
     errMaxDuration: (maxMin: number, actualMin: string) => isVi 
       ? `Độ dài video vượt quá giới hạn cho phép (Tối đa ${maxMin} phút. Video của bạn: ${actualMin} phút).` 
       : `Video duration exceeds the allowed limit (Maximum ${maxMin} minutes. Your video: ${actualMin} minutes).`,

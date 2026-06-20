@@ -394,6 +394,13 @@ export class App {
     if (file) {
       this.errorMessage.set(null);
 
+      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg'];
+      if (!allowedTypes.includes(file.type)) {
+        this.errorMessage.set(this.translations().errInvalidFormat);
+        (event.target as HTMLInputElement).value = "";
+        return;
+      }
+
       const maxSize = 300 * 1024 * 1024; // 300MB
       if (file.size > maxSize) {
         this.errorMessage.set(

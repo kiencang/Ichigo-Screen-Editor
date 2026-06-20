@@ -395,7 +395,7 @@ export class CanvasDrawer {
             x: stroke.startPos.x,
             y: stroke.startPos.y,
             text: stroke.text || "Text",
-            fontSize: stroke.fontSize || 24,
+            fontSize: stroke.fontSize || 60,
             fontStyle: "bold",
             fontFamily: "sans-serif",
             fill: stroke.color,
@@ -480,7 +480,7 @@ export class CanvasDrawer {
               x: stroke.startPos.x,
               y: stroke.startPos.y,
               text: stroke.text || "Text",
-              fontSize: stroke.fontSize || 24,
+              fontSize: stroke.fontSize || 60,
               fill: stroke.color,
               scaleX: 1,
               scaleY: 1,
@@ -563,7 +563,7 @@ export class CanvasDrawer {
       startTime: this.time,
       duration: 3.0,
       text: tool === "text" ? "Văn bản / Text" : undefined,
-      fontSize: tool === "text" ? 24 : undefined,
+      fontSize: tool === "text" ? 60 : undefined,
     };
 
     this.activeStrokeId.set(strokeId);
@@ -669,7 +669,7 @@ export class CanvasDrawer {
         x: stroke.startPos.x,
         y: stroke.startPos.y,
         text: stroke.text || "Text",
-        fontSize: stroke.fontSize || 24,
+        fontSize: stroke.fontSize || 60,
         fontStyle: "bold",
         fontFamily: "sans-serif",
         fill: stroke.color,
@@ -713,9 +713,9 @@ export class CanvasDrawer {
       const nodeX = node.x();
       const nodeY = node.y();
       const textNode = node as Konva.Text;
-      const currentFontSize = textNode.fontSize() || 24;
+      const currentFontSize = textNode.fontSize() || 60;
       const scale = node.scaleX() || 1;
-      const newFontSize = Math.max(6, Math.min(120, Math.round(currentFontSize * scale)));
+      const newFontSize = Math.max(10, Math.min(200, Math.round(currentFontSize * scale)));
       updated.startPos = { x: nodeX, y: nodeY };
       updated.fontSize = newFontSize;
     } else if (stroke.type === "line" || stroke.type === "arrow") {
@@ -805,7 +805,7 @@ export class CanvasDrawer {
   }
 
   updateStrokeFontSize(id: string, newFontSize: number) {
-    const validSize = Math.max(6, Math.min(120, Number(newFontSize)));
+    const validSize = Math.max(10, Math.min(200, Number(newFontSize)));
     this.strokes.update((all) =>
       all.map((s) => (s.id === id ? { ...s, fontSize: validSize } : s))
     );

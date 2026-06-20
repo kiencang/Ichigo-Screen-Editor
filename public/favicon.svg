@@ -1,0 +1,27 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="rotate(45, 128, 128)">
+    <!-- Wooden tip -->
+    <polygon points="128,240 80,160 176,160" fill="#FDE68A" />
+    <polygon points="128,240 128,160 176,160" fill="#FCD34D" />
+    
+    <!-- Lead tip -->
+    <polygon points="128,240 108,206 148,206" fill="#374151" />
+    <polygon points="128,240 128,206 148,206" fill="#1F2937" />
+
+    <!-- Main pencil body -->
+    <rect x="80" y="48" width="96" height="112" fill="#EF4444" />
+    <rect x="80" y="48" width="32" height="112" fill="#F87171" />
+    <rect x="144" y="48" width="32" height="112" fill="#DC2626" />
+
+    <!-- Metal band -->
+    <rect x="80" y="24" width="96" height="24" fill="#9CA3AF" />
+    <rect x="80" y="24" width="32" height="24" fill="#D1D5DB" />
+    <rect x="144" y="24" width="32" height="24" fill="#6B7280" />
+    <line x1="80" y1="32" x2="176" y2="32" stroke="#4B5563" stroke-width="2" />
+    <line x1="80" y1="40" x2="176" y2="40" stroke="#4B5563" stroke-width="2" />
+
+    <!-- Eraser -->
+    <path d="M 80 24 L 176 24 L 168 12 C 160 4 96 4 88 12 Z" fill="#FCA5A5" />
+    <path d="M 128 24 L 176 24 L 168 12 C 164 8 136 4 128 12 Z" fill="#F87171" />
+  </g>
+</svg>
