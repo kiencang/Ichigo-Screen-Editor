@@ -394,7 +394,7 @@ export class App {
     if (file) {
       this.errorMessage.set(null);
 
-      const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg'];
+      const allowedTypes = ['video/mp4', 'video/webm'];
       if (!allowedTypes.includes(file.type)) {
         this.errorMessage.set(this.translations().errInvalidFormat);
         (event.target as HTMLInputElement).value = "";

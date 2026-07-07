@@ -18,7 +18,7 @@ import { AppTranslations } from '../core/translations';
         <mat-icon>folder_open</mat-icon>
         {{ translations().browseFiles }}
       </label>
-      <input id="video-upload" type="file" accept=".mp4,.webm,.ogg,video/mp4,video/webm,video/ogg" class="hidden" (change)="onFileChanged($event)">
+      <input id="video-upload" type="file" accept=".mp4,.webm,video/mp4,video/webm" class="hidden" (change)="onFileChanged($event)">
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

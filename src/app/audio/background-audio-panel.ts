@@ -15,11 +15,14 @@ import { BgAudioTrackItem } from './bg-audio-track-item';
     <div class="p-4 rounded-2xl bg-neutral-900 border border-white/5 flex flex-col gap-3">
         <div class="flex items-center justify-between">
           <span class="text-sm font-medium text-neutral-400">{{ translations().bgAudioTrack }}</span>
-          <label for="bg-audio-upload" class="px-3 py-1.5 rounded-lg bg-neutral-950 hover:bg-neutral-800 text-xs font-medium border border-white/10 cursor-pointer transition-colors text-neutral-300 flex items-center gap-1">
+          <label for="bg-audio-upload" class="group relative px-3 py-1.5 rounded-lg bg-neutral-950 hover:bg-neutral-800 text-xs font-medium border border-white/10 cursor-pointer transition-colors text-neutral-300 flex items-center gap-1">
              <mat-icon style="font-size: 14px; width: 14px; height: 14px;">add</mat-icon>
              {{ translations().addBgAudio }}
+             <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1.5 bg-neutral-800 text-neutral-200 text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-md border border-white/10">
+               {{ translations().supportedAudioFormats }}
+             </div>
           </label>
-          <input id="bg-audio-upload" type="file" accept="audio/*" multiple class="hidden" (change)="onAudioSelected($event)">
+          <input id="bg-audio-upload" type="file" accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a" multiple class="hidden" (change)="onAudioSelected($event)">
         </div>
         
         @if (audioTracks().length > 0) {

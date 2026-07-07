@@ -288,7 +288,7 @@ import { AudioGenerator } from "../audio/audio-generator";
                 @if (!settings().audioFile) {
                   <label
                     for="intro-audio-upload"
-                    class="mt-2 flex flex-col items-center justify-center p-3 rounded-lg border border-dashed border-white/10 hover:border-emerald-500/50 hover:bg-neutral-900/50 transition-colors cursor-pointer group"
+                    class="mt-2 flex flex-col items-center justify-center p-3 rounded-lg border border-dashed border-white/10 hover:border-emerald-500/50 hover:bg-neutral-900/50 transition-colors cursor-pointer group relative"
                   >
                     <mat-icon
                       class="text-neutral-500 group-hover:text-emerald-400 mb-1"
@@ -301,11 +301,14 @@ import { AudioGenerator } from "../audio/audio-generator";
                         isVi ? "Chọn tệp âm thanh" : "Choose audio file"
                       }}</span
                     >
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1.5 bg-neutral-800 text-neutral-200 text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10 shadow-md border border-white/10">
+                      {{ isVi ? 'Hỗ trợ: MP3, WAV, M4A' : 'Supported: MP3, WAV, M4A' }}
+                    </div>
                   </label>
                   <input
                     id="intro-audio-upload"
                     type="file"
-                    accept="audio/*"
+                    accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4,audio/x-m4a"
                     class="hidden"
                     (change)="onAudioSelected($event)"
                   />
